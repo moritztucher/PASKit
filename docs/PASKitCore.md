@@ -28,7 +28,7 @@ App + bundle + device metadata. Static accessors, raw values; `AppInfo.versionWi
 
 ## Notes
 
-- `PASTheme` / design tokens live in `PASKitUI`, not here.
+- Design tokens stay per-app. PASKit has no design module — apps use SwiftUI defaults and their own per-app theme.
 - `OSLogHandler` emits a swift-log `log(event:)` deprecation warning — carried over verbatim from `ADCoreKit`; harmless, cleanup deferred.
 
 ## Remaining
