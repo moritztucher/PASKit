@@ -1,8 +1,8 @@
 # PASKitAnalytics
 
-**Status:** Spec — not yet built.
+**Status:** Scaffolded — target + PostHog dependency wired (`Sources/PASKitAnalytics/`). Module API not yet written.
 **Build trigger:** When the first app needs analytics. Also unblocks XueTang (see below).
-**Dependencies:** `PostHog` SDK. `PASKitCore`.
+**Dependencies:** `PostHog` SDK (`posthog-ios`, from 3.48.3) + `PASKitCore`.
 
 ## Purpose
 
