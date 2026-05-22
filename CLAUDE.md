@@ -13,7 +13,6 @@ Each module has a spec doc in `docs/` — the source of truth for what that modu
 | Module | Spec | Purpose |
 |--------|------|---------|
 | `PASKitCore` | [docs/PASKitCore.md](docs/PASKitCore.md) | Foundational utilities — networking, logging, reachability, credentials, app metadata. |
-| `PASKitUI` | [docs/PASKitUI.md](docs/PASKitUI.md) | Shared design tokens — spacing, corner radius, colour. |
 | `PASKitLifecycle` | [docs/PASKitLifecycle.md](docs/PASKitLifecycle.md) | App-lifecycle UI — rate prompt, update check, what's-new, feedback, app-info footer. |
 | `PASKitPurchases` | [docs/PASKitPurchases.md](docs/PASKitPurchases.md) | RevenueCat wrapper — entitlements, gating, hosted paywall. |
 | `PASKitAnalytics` | [docs/PASKitAnalytics.md](docs/PASKitAnalytics.md) | PostHog facade — generic capture surface. |
