@@ -1,8 +1,9 @@
 # PASKitCore
 
-**Status:** Spec — not yet built.
+**Status:** In progress — `AppInfo` / `DeviceInfo` built. `NetworkMonitor`, `PASTheme` pending.
 **Build trigger:** Built alongside the first module that depends on it (`PASKitLifecycle` needs `AppInfo` + `PASTheme`).
-**Dependencies:** None third-party. Foundation / Network / SwiftUI / Observation only.
+**Dependencies:** None third-party. Foundation / UIKit / Network / Observation / SwiftUI.
+**Platforms:** iOS 17+, macOS 14+ (`UIKit`-only members are guarded with `#if canImport(UIKit)`).
 
 ## Purpose
 
@@ -10,12 +11,12 @@ Foundational, dependency-free utilities used by every other PASKit module and by
 
 ## Components
 
-### AppInfo — confirmed
-App + bundle metadata. Merge XueTang's `AppInfo` and `DeviceInfo` into one namespace.
-- App: `version` (`CFBundleShortVersionString`), `build` (`CFBundleVersion`), `displayName` (`CFBundleDisplayName` → `CFBundleName`), `bundleIdentifier`.
-- Device: `systemName`, `systemVersion`, `model`, `deviceIdentifier` (raw `uname` machine code).
-- Expose **raw values** — no baked-in localized strings. XueTang's `"Version 1.2"` prefix stays app-side, or provide an optional formatter.
-- Fix the XueTang bug: `fullVersionWithBuild` renders `"Version 1.2 45"` — missing the conventional `(build)` parenthesis.
+### AppInfo / DeviceInfo — ✅ built (`Sources/PASKitCore/AppInfo.swift`)
+App + bundle metadata. XueTang's `AppInfo` and `DeviceInfo` merged into one file.
+- `AppInfo`: `version` (`CFBundleShortVersionString`), `build` (`CFBundleVersion`), `displayName` (`CFBundleDisplayName` → `CFBundleName`), `bundleIdentifier`, `versionWithBuild`.
+- `DeviceInfo`: `modelIdentifier` (raw `uname` machine code, all platforms); `systemName`, `systemVersion`, `model`, `summary` (`UIKit`-guarded).
+- Exposes **raw values** — no baked-in localized strings. XueTang's `"Version 1.2"` prefix stays app-side.
+- XueTang bug fixed: `versionWithBuild` renders `"1.2 (45)"` with the conventional `(build)` parenthesis.
 
 ### NetworkMonitor — confirmed
 Internet-connectivity monitor. **Rebuild clean** rather than lift XueTang's verbatim:
@@ -45,6 +46,6 @@ Proposed, not yet justified by a real second use. Add per the build-on-need rule
 ## What needs to be done
 
 - [ ] Define `PASTheme` and its environment injection.
-- [ ] Build `AppInfo` (merged App + Device), raw values, build-number bug fixed.
+- [x] Build `AppInfo` (merged App + Device), raw values, build-number bug fixed.
 - [ ] Rebuild `NetworkMonitor` clean (AsyncStream, double-start guard, Sendable, launch state).
 - [ ] Decide Keychain wrapper in/out when the first consumer is real.
