@@ -1,51 +1,37 @@
 # PASKitCore
 
-**Status:** In progress — `AppInfo` / `DeviceInfo` / `NetworkMonitor` built. `PASTheme` pending.
-**Build trigger:** Built alongside the first module that depends on it (`PASKitLifecycle` needs `AppInfo` + `PASTheme`).
-**Dependencies:** None third-party. Foundation / UIKit / Network / Observation / SwiftUI.
-**Platforms:** iOS 17+, macOS 14+ (`UIKit`-only members are guarded with `#if canImport(UIKit)`).
+**Status:** Built — foundational utilities compiling.
+**Dependencies:** `swift-log`, `KeychainAccess`. Otherwise Foundation / Network / Observation / UIKit / os.
+**Platforms:** iOS 18+, macOS 15+ (`UIKit`-only members guarded with `#if canImport(UIKit)`).
 
 ## Purpose
 
-Foundational, dependency-free utilities used by every other PASKit module and by apps directly. Also home to the `PASTheme` contract — the seam that lets PASKit's UI be un-branded.
+Foundational utilities used by every other PASKit module and by apps directly. `AppInfo` / `DeviceInfo` were built fresh; the networking, logging, reachability and credential code was migrated from the AnalyticsDashboard's `ADCoreKit` during the PASKit ↔ Dashboard reconciliation (see `docs/adr/`).
 
 ## Components
 
-### AppInfo / DeviceInfo — ✅ built (`Sources/PASKitCore/AppInfo.swift`)
-App + bundle metadata. XueTang's `AppInfo` and `DeviceInfo` merged into one file.
-- `AppInfo`: `version` (`CFBundleShortVersionString`), `build` (`CFBundleVersion`), `displayName` (`CFBundleDisplayName` → `CFBundleName`), `bundleIdentifier`, `versionWithBuild`.
-- `DeviceInfo`: `modelIdentifier` (raw `uname` machine code, all platforms); `systemName`, `systemVersion`, `model`, `summary` (`UIKit`-guarded).
-- Exposes **raw values** — no baked-in localized strings. XueTang's `"Version 1.2"` prefix stays app-side.
-- XueTang bug fixed: `versionWithBuild` renders `"1.2 (45)"` with the conventional `(build)` parenthesis.
+### AppInfo / DeviceInfo — ✅ built (`AppInfo.swift`)
+App + bundle + device metadata. Static accessors, raw values; `AppInfo.versionWithBuild` renders `"1.2 (45)"`.
 
-### NetworkMonitor — ✅ built (`Sources/PASKitCore/NetworkMonitor.swift`)
-Internet-connectivity monitor. Rebuilt clean (not lifted from XueTang verbatim):
-- `NWPathMonitor` (Network framework) + `@MainActor @Observable` for SwiftUI consumers.
-- Non-SwiftUI consumption path — `connectivity()` returns an `AsyncStream<Bool>` (XueTang's was `.shared`-singleton only). Plain `init()` — injectable, not singleton-only.
-- Double-start guarded via an `isMonitoring` flag; `start()` / `stop()` are idempotent.
-- Swift 6 strict-concurrency clean — path updates reduce to `Sendable` values before crossing to the main actor.
-- Launch false-positive fixed: `isConnected` is seeded from `monitor.currentPath` at init, not hard-coded to `true`.
+### Networking — ✅ built
+- `NetworkService.swift` — the networking seam: `NetworkService` protocol + `URLSessionNetworkService` (2xx handling, 429/Retry-After, decode). Migrated from `ADCoreKit`.
+- `PASError.swift` — shared error domain (migrated from `ADCoreKit`'s `ADError`).
 
-### PASTheme — confirmed
-The minimal theme contract that lets `PASKitLifecycle` views be un-branded. NOT a component library.
-- Spacing scale, corner-radius scale, semantic colour roles, a primary button style.
-- Injected via the SwiftUI environment; each app supplies its own `PASTheme`.
-- No component hard-codes a colour — it reads the theme.
+### Reachability — ✅ built
+`Reachability.swift` (protocol + `NetworkStatus`) and `NWReachability.swift` (`@MainActor @Observable`, `NWPathMonitor`-backed). Migrated from `ADCoreKit` — supersedes the `NetworkMonitor` first drafted for PASKit, which has been removed.
 
-### Candidate additions — not yet confirmed
-Proposed, not yet justified by a real second use. Add per the build-on-need rule:
-- Keychain wrapper — likely (the Analytics Dashboard stores API keys in Keychain).
-- Networking base / API-client helper.
+### Logging — ✅ built (`PASLogger.swift`)
+`PASLogger` (migrated from `ADCoreKit`'s `ADLogger`) — a swift-log → `os.Logger` bridge. `bootstrap()` once at app startup; `make(category:)` for category loggers. Subsystem resolves to the app's bundle id via `AppInfo`, replacing the Dashboard's hardcoded constant.
 
-## Extraction sources
+### Credentials — ✅ built
+`CredentialVault.swift` (protocol) + `KeychainCredentialVault.swift` (KeychainAccess-backed, per-source service scoping, iCloud-synced). Migrated from `ADCoreKit`; `baseService` defaults to the bundle id.
 
-- `XueTang/XueTangApp/Core/Utilities/AppInfo.swift`
-- `XueTang/XueTangApp/Core/Utilities/DeviceInfo.swift`
-- `XueTang/XueTangApp/Core/Services/NetworkMonitor.swift`
+## Notes
 
-## What needs to be done
+- `PASTheme` / design tokens live in `PASKitUI`, not here.
+- `OSLogHandler` emits a swift-log `log(event:)` deprecation warning — carried over verbatim from `ADCoreKit`; harmless, cleanup deferred.
 
-- [ ] Define `PASTheme` and its environment injection.
-- [x] Build `AppInfo` (merged App + Device), raw values, build-number bug fixed.
-- [x] Rebuild `NetworkMonitor` clean (AsyncStream, double-start guard, Sendable, launch state).
-- [ ] Decide Keychain wrapper in/out when the first consumer is real.
+## Remaining
+
+- [ ] Unit tests.
+- [ ] Resolve the swift-log `log(event:)` deprecation.
