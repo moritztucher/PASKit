@@ -8,7 +8,15 @@ let package = Package(
         .macOS(.v15),
     ],
     products: [
+        // Umbrella — one dependency line gives access to every module.
+        .library(
+            name: "PASKit",
+            targets: ["PASKitCore", "PASKitUI", "PASKitPurchases", "PASKitAnalytics"]
+        ),
+        // Per-module — for surgical dependencies (e.g. an extension target that
+        // must not link a vendor SDK).
         .library(name: "PASKitCore", targets: ["PASKitCore"]),
+        .library(name: "PASKitUI", targets: ["PASKitUI"]),
         .library(name: "PASKitPurchases", targets: ["PASKitPurchases"]),
         .library(name: "PASKitAnalytics", targets: ["PASKitAnalytics"]),
     ],
@@ -29,6 +37,7 @@ let package = Package(
                 .product(name: "KeychainAccess", package: "KeychainAccess"),
             ]
         ),
+        .target(name: "PASKitUI"),
         .target(
             name: "PASKitPurchases",
             dependencies: [
