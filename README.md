@@ -8,16 +8,14 @@ PASKit collects the cross-cutting infrastructure every Pocket Apps Studio app ne
 
 ## Modules
 
-Built incrementally — modules are lifted into PASKit as they prove reusable across live app builds, not designed up front.
+One Swift package, one library product per module — an app imports only what it needs. Each module has a spec in [`docs/`](docs/); see [`CLAUDE.md`](CLAUDE.md) for the build philosophy.
 
-- **Auth** — sign-in and account handling
-- **Purchases** — RevenueCat integration and user / entitlement state
-- **Paywall** — paywall presentation, remotely configurable
-- **Analytics** — analytics abstraction (PostHog / TelemetryDeck)
-- **Onboarding** — first-run flows
-- **Settings** — shared settings surface
-- **Design System** — shared visual components
-- **Feedback** *(planned)* — in-app feedback tooling
+- **PASKitCore** — foundational utilities (`AppInfo`, `NetworkMonitor`) + the `PASTheme` contract — [docs](docs/PASKitCore.md)
+- **PASKitLifecycle** — app-lifecycle UI: rate prompt, update check, what's-new, feedback, app-info footer — [docs](docs/PASKitLifecycle.md)
+- **PASKitPurchases** — RevenueCat wrapper: entitlements, gating, hosted paywall — [docs](docs/PASKitPurchases.md)
+- **PASKitAnalytics** — PostHog facade — [docs](docs/PASKitAnalytics.md)
+
+Modules are built on first real need, not scaffolded up front.
 
 ## Status
 
