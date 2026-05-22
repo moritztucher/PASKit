@@ -1,8 +1,8 @@
 # PASKitPurchases
 
-**Status:** Spec — not yet built.
+**Status:** Scaffolded — target + RevenueCat dependency wired (`Sources/PASKitPurchases/`). Module API not yet written.
 **Build trigger:** When the first app needs to take payment. (Candidate: the Analytics Dashboard, if it ships public with a paywall.)
-**Dependencies:** `RevenueCat`, `RevenueCatUI` SDKs. `PASKitCore`.
+**Dependencies:** `RevenueCat` SDK (`purchases-ios-spm`, from 5.67.0) + `PASKitCore`. `RevenueCatUI` is wired in alongside the hosted-paywall code, not the scaffold.
 
 ## Purpose
 
