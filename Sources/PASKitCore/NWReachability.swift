@@ -8,8 +8,8 @@
 //
 
 import Foundation
-import Logging
 import Network
+import os
 
 @MainActor
 @Observable
@@ -18,7 +18,7 @@ public final class NWReachability: Reachability {
 
     private let monitor: NWPathMonitor
     private let queue: DispatchQueue
-    private let log: Logging.Logger
+    private let log: Logger
     private var isStarted = false
 
     public init() {
@@ -50,6 +50,6 @@ public final class NWReachability: Reachability {
     private func apply(_ next: NetworkStatus) {
         guard status != next else { return }
         status = next
-        log.info("network status changed", metadata: ["status": "\(next)"])
+        log.info("network status changed to \(String(describing: next), privacy: .public)")
     }
 }
