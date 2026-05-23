@@ -27,6 +27,9 @@ let package = Package(
         .package(url: "https://github.com/RevenueCat/purchases-ios-spm.git", from: "5.67.0"),
         // PostHog — pinned to the studio's known-good major.
         .package(url: "https://github.com/PostHog/posthog-ios", from: "3.48.3"),
+        // Tooling — SimplyDanny/SwiftLintPlugins is the plugin-only distribution
+        // of SwiftLint; avoids pulling swift-syntax into the dependency graph.
+        .package(url: "https://github.com/SimplyDanny/SwiftLintPlugins", from: "0.59.0"),
     ],
     targets: [
         .target(
@@ -34,6 +37,9 @@ let package = Package(
             dependencies: [
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "KeychainAccess", package: "KeychainAccess"),
+            ],
+            plugins: [
+                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
             ]
         ),
         .target(
@@ -41,6 +47,9 @@ let package = Package(
             dependencies: [
                 "PASKitCore",
                 .product(name: "RevenueCat", package: "purchases-ios-spm"),
+            ],
+            plugins: [
+                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
             ]
         ),
         .target(
@@ -48,6 +57,9 @@ let package = Package(
             dependencies: [
                 "PASKitCore",
                 .product(name: "PostHog", package: "posthog-ios"),
+            ],
+            plugins: [
+                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
             ]
         ),
     ],
