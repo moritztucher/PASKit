@@ -6,6 +6,18 @@ Guidance for Claude Code when working in this repository.
 
 PASKit is the shared service package for **Pocket Apps Studio** — the reusable core across every PAS app. It is a multi-target Swift package: each app depends only on the modules it needs. Building a capability once here is what makes apps 3, 4, 5 cheap to ship.
 
+## For consuming apps
+
+Apps that adopt PASKit should add this line to their own `CLAUDE.md` so Claude sessions in that app know PASKit's surface and follow its conventions:
+
+```
+@<relative-path>/CLAUDE-INTEGRATION.md
+```
+
+For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. That single import gives the consuming session PASKit's module list, public API surface, conventions, and the build philosophy summary — so it uses PASKit to the full extent instead of reinventing.
+
+When the public surface changes (new module, new API, new convention), update `CLAUDE-INTEGRATION.md` in the same commit. It is the contract apps depend on.
+
 ## Modules
 
 Each module has a spec doc in `docs/` — the source of truth for what that module should become. Read the relevant doc before working on a module.
