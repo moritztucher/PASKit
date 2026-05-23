@@ -11,11 +11,12 @@ let package = Package(
         // Umbrella — one dependency line gives access to every module.
         .library(
             name: "PASKit",
-            targets: ["PASKitCore", "PASKitPurchases", "PASKitAnalytics"]
+            targets: ["PASKitCore", "PASKitLifecycle", "PASKitPurchases", "PASKitAnalytics"]
         ),
         // Per-module — for surgical dependencies (e.g. an extension target that
         // must not link a vendor SDK).
         .library(name: "PASKitCore", targets: ["PASKitCore"]),
+        .library(name: "PASKitLifecycle", targets: ["PASKitLifecycle"]),
         .library(name: "PASKitPurchases", targets: ["PASKitPurchases"]),
         .library(name: "PASKitAnalytics", targets: ["PASKitAnalytics"]),
     ],
@@ -38,6 +39,13 @@ let package = Package(
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "KeychainAccess", package: "KeychainAccess"),
             ],
+            plugins: [
+                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
+            ]
+        ),
+        .target(
+            name: "PASKitLifecycle",
+            dependencies: ["PASKitCore"],
             plugins: [
                 .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
             ]

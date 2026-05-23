@@ -1,47 +1,39 @@
 # PASKitLifecycle
 
-**Status:** Spec — not yet built. Cleanest first module — most reuse evidence, lowest extraction friction.
-**Build trigger:** When the first app after XueTang needs these surfaces.
-**Dependencies:** `PASKitCore` (`PASTheme`, `AppInfo`). StoreKit, MessageUI.
+**Status:** Built — six components.
+**Dependencies:** `PASKitCore`. StoreKit, SwiftUI, MessageUI (iOS), UIKit (iOS).
+**Platforms:** iOS 18+, macOS 15+. The mail composer and the runtime app-icon loader are iOS-only (`#if canImport(MessageUI)` / `#if canImport(UIKit)`); the rest works on both.
 
 ## Purpose
 
-App-lifecycle / app-meta UI — the housekeeping surfaces every app needs and that are brand-light. All views are built against `PASTheme`; no view hard-codes a colour or string.
+App-lifecycle / app-meta UI — the housekeeping surfaces every app needs and that stay brand-light. Views use SwiftUI defaults (system colours, system fonts, `.tint`); apps style via the standard SwiftUI environment (`.tint(.brand)`, `.font(...)`, etc.). PASKit has no design module — theme stays per-app.
 
 ## Components
 
-### Rate the App — Easy, near drop-in
-Extract XueTang's `AppRatingHelper.swift` almost verbatim. Already app-agnostic: pure StoreKit `requestReview`, two-stage alert, caller-supplied trigger conditions. This is the template for the whole package — generic mechanism, app injects the thresholds.
+### AppRatingHelper — ✅ built (`AppRatingHelper.swift`)
+`View.presentAppRating(initialCondition:askLaterCondition:)` — a view modifier wrapping StoreKit's `requestReview`. Two-stage alert (Yes / Ask Later / Never Ask Me Again; then Yes / Nope). Caller supplies the trigger conditions as async closures. State persisted via `@AppStorage`. Extracted from XueTang.
 
-### App update check — Easy–Moderate
-- `VersionCheckManager` — extract as-is. Hits the iTunes lookup API, compares against `CFBundleShortVersionString`. Fully generic already.
-- `AppUpdateView` — extract, inject icon + `PASTheme`.
-- **Decision:** XueTang force-updates on every major.minor bump (`.interactiveDismissDisabled(true)`). Too aggressive for a portfolio default. Make force-vs-nudge a parameter, **default to dismissible nudge**; reserve the hard gate for security releases.
+### VersionCheckManager — ✅ built (`VersionCheckManager.swift`)
+`@MainActor public final class` — hits `https://itunes.apple.com/lookup?bundleId=...`, compares against `AppInfo.version`. Compares only major.minor — patch differences are ignored. Returns `Result?` (current / available version + App Store URL).
 
-### WhatsNew — Moderate, clean
-Extract XueTang's `WhatsNewView.swift` — keep the declarative `@resultBuilder` card API and the `blurSlide` animation. Abstract the 3 hard-coded strings + design tokens. Trigger logic (version-compare via UserDefaults, skip same-day installs) is generic — extract it too.
+### AppUpdateView — ✅ built (`AppUpdateView.swift`)
+SwiftUI view presenting the update prompt. System styling, `.borderedProminent` "Update App" button that opens the App Store URL via `openURL`. `forceUpdate: Bool = false` controls dismissibility — defaults to a dismissible nudge; reserve `true` for security releases.
 
-### Feedback — thin wrapper only
-A `MailComposerView` wrapper (`MFMailComposeViewController`) with a configurable recipient — this is what XueTang actually ships in production.
-- **Do NOT extract** XueTang's `FeedbackSheetView` — it is dead code (defined, presented nowhere) and wired straight into PostHog + RevenueCat.
+### WhatsNewView — ✅ built (`WhatsNewView.swift`)
+Declarative card-list view using `@WhatsNewCardResultBuilder` and a staggered `blurSlide` entrance animation. Strings (`appName`, `title`, `footerMessage`, `continueButtonTitle`) are parameters; cards take SF Symbol names. Styling via `.tint`, `.primary`, `.secondary`.
 
-### AppInfoFooter — NEW, build fresh
-Settings-screen footer: app icon + app name + version(build). Neither XueTang nor iOS-Conferences has this — build it clean.
-- App icon at runtime is the fiddly bit: read `CFBundleIcons → CFBundlePrimaryIcon → CFBundleIconFiles`, take the last entry, load via `UIImage(named:)`. Encapsulate it here once.
-- Name + version from `PASKitCore.AppInfo`.
+### MailComposerView — ✅ built (`MailComposerView.swift`, iOS-only)
+Thin `UIViewControllerRepresentable` over `MFMailComposeViewController` — configurable recipients, subject, body, and an `onDismiss` `Result` callback. Static `canSendMail` check to gate presentation. iOS-only — `MessageUI` is not available on macOS.
 
-## Extraction sources
+### AppInfoFooter — ✅ built (`AppInfoFooter.swift`, iOS-only)
+Settings-screen footer: app icon + display name + version. Loads the app's own icon at runtime via `CFBundleIcons` → `CFBundlePrimaryIcon` → `CFBundleIconFiles`. iOS-only.
 
-- `XueTang/XueTangApp/Core/Utilities/AppRatingHelper.swift`
-- `XueTang/XueTangApp/Views/Other/UpdateChecker/VersionCheckManager.swift`
-- `XueTang/XueTangApp/Views/Other/UpdateChecker/AppUpdateView.swift`
-- `XueTang/XueTangApp/Views/Other/WhatsNew/WhatsNewView.swift`
-- iOS-Conferences `Features/Settings/Views/SettingsView.swift` `aboutSection` — reference only; almost nothing to lift (no icon, no name, inline `Bundle.main` version read).
+## Notes
 
-## What needs to be done
+- No `PASKitUI` / `PASTheme` dependency — views use SwiftUI's environment-injected styling. Apps style at the call site (`.tint`, `.font`, `.preferredColorScheme`, etc.).
+- Built against SwiftLint with the studio-wide config — no warnings on these files.
 
-- [ ] Rate: lift `AppRatingHelper`, retarget tokens to `PASTheme`.
-- [ ] Update check: lift `VersionCheckManager`; rebuild `AppUpdateView` with injected icon + theme + force/nudge param.
-- [ ] WhatsNew: lift view + result-builder + animation; parameterise strings + theme.
-- [ ] Feedback: build thin `MailComposerView` wrapper.
-- [ ] AppInfoFooter: build fresh, incl. runtime app-icon loading.
+## Remaining
+
+- [ ] Unit tests where practical (`VersionCheckManager.requiresUpdate` is the obvious target).
+- [ ] Localisation of `AppUpdateView` strings if a non-English app consumes the view.
