@@ -1,7 +1,7 @@
 # PASKitCore
 
 **Status:** Built — foundational utilities compiling.
-**Dependencies:** `swift-log`, `KeychainAccess`. Otherwise Foundation / Network / Observation / UIKit / os.
+**Dependencies:** `KeychainAccess`. Otherwise Foundation / Network / Observation / UIKit / os.
 **Platforms:** iOS 18+, macOS 15+ (`UIKit`-only members guarded with `#if canImport(UIKit)`).
 
 ## Purpose
@@ -21,7 +21,7 @@ App + bundle + device metadata. Static accessors, raw values; `AppInfo.versionWi
 `Reachability.swift` (protocol + `NetworkStatus`) and `NWReachability.swift` (`@MainActor @Observable`, `NWPathMonitor`-backed). Migrated from `ADCoreKit` — supersedes the `NetworkMonitor` first drafted for PASKit, which has been removed.
 
 ### Logging — ✅ built (`PASLogger.swift`)
-`PASLogger` (migrated from `ADCoreKit`'s `ADLogger`) — a swift-log → `os.Logger` bridge. `bootstrap()` once at app startup; `make(category:)` for category loggers. Subsystem resolves to the app's bundle id via `AppInfo`, replacing the Dashboard's hardcoded constant.
+`PASLogger` — a thin facade over `os.Logger`. `make(category:)` returns a logger scoped under the app's bundle id (via `AppInfo`) and the given category. Logs surface in Console.app and the Logging instrument in Instruments. No bootstrap step needed — `os.Logger` is per-instance.
 
 ### Credentials — ✅ built
 `CredentialVault.swift` (protocol) + `KeychainCredentialVault.swift` (KeychainAccess-backed, per-source service scoping, iCloud-synced). Migrated from `ADCoreKit`; `baseService` defaults to the bundle id.
@@ -29,9 +29,7 @@ App + bundle + device metadata. Static accessors, raw values; `AppInfo.versionWi
 ## Notes
 
 - Design tokens stay per-app. PASKit has no design module — apps use SwiftUI defaults and their own per-app theme.
-- `OSLogHandler` emits a swift-log `log(event:)` deprecation warning — carried over verbatim from `ADCoreKit`; harmless, cleanup deferred.
 
 ## Remaining
 
 - [ ] Unit tests.
-- [ ] Resolve the swift-log `log(event:)` deprecation.

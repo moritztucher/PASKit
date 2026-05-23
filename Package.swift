@@ -22,7 +22,6 @@ let package = Package(
     ],
     dependencies: [
         // Foundational
-        .package(url: "https://github.com/apple/swift-log", from: "1.5.0"),
         .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", from: "4.2.2"),
         // RevenueCat — SPM-optimised mirror, pinned to the studio's known-good major.
         .package(url: "https://github.com/RevenueCat/purchases-ios-spm.git", from: "5.67.0"),
@@ -36,7 +35,6 @@ let package = Package(
         .target(
             name: "PASKitCore",
             dependencies: [
-                .product(name: "Logging", package: "swift-log"),
                 .product(name: "KeychainAccess", package: "KeychainAccess"),
             ],
             plugins: [
