@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import os
+@_exported import os
 
 public enum PASLogger {
     /// Loggers are grouped under the consuming app's bundle identifier.
