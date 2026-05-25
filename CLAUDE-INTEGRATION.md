@@ -15,7 +15,7 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 | Module | Provides |
 |--------|----------|
 | `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`). |
-| `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `MailComposerView` (iOS), `AppInfoFooter` (iOS). |
+| `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `MailComposerView` (iOS), `AppInfoFooter` (iOS). |
 | `PASKitPurchases` | RevenueCat wrapper. **Stub today** — namespace placeholder only. |
 | `PASKitAnalytics` | PostHog facade. **Stub today** — namespace placeholder only. |
 | `PASKit` (umbrella) | Re-exports every module — one dependency line, `import` modules individually. |
@@ -82,7 +82,28 @@ WhatsNewView(appName: "MyApp", title: "What's New") {
 ```
 SF Symbol names for `symbol`, not asset names.
 
-Feedback / mail (iOS):
+Feedback prompt — two-stage prompt that opens `FeedbackSheet` on accept. PASKit owns the form, the app owns the transport (the `onSubmit` closure):
+```swift
+SomeView().presentAppFeedback(
+    initialCondition: { await sessions.count >= 5 },
+    askLaterCondition: { await sessions.count >= 12 }
+) {
+    FeedbackSheet { payload in
+        try await sendFeedback(payload)  // email, HTTP, webhook — app's choice
+    }
+}
+```
+
+Or present `FeedbackSheet` directly from a Settings row (no prompt gating):
+```swift
+@State private var showFeedback = false
+// Button("Send Feedback") { showFeedback = true }
+//   .sheet(isPresented: $showFeedback) {
+//       FeedbackSheet { payload in try await sendFeedback(payload) }
+//   }
+```
+
+Mail composer is still available for the simple "open a prefilled mail draft" use case (iOS-only):
 ```swift
 if MailComposerView.canSendMail {
     .sheet { MailComposerView(recipients: ["support@..."]) }
