@@ -26,6 +26,9 @@ App + bundle + device metadata. Static accessors, raw values; `AppInfo.versionWi
 ### Credentials — ✅ built
 `CredentialVault.swift` (protocol) + `KeychainCredentialVault.swift` (KeychainAccess-backed, per-source service scoping, iCloud-synced). Migrated from `ADCoreKit`; `baseService` defaults to the bundle id.
 
+### Haptics — ✅ built (`Haptics.swift`)
+`Haptics.play(_:isEnabled:)` — one-call wrapper over `UIImpactFeedbackGenerator` / `UINotificationFeedbackGenerator` / `UISelectionFeedbackGenerator`. Primitive-only `PASHaptic` enum (`.light` … `.heavy`, `.success` / `.warning` / `.error`, `.selection`) — no semantic aliases; vocabulary stays per-app. Caller supplies the enabled-gate. `View.hapticOnTap(_:isEnabled:action:)` is a thin SwiftUI helper. iOS-only at the hardware level; macOS compiles to a no-op via `#if canImport(UIKit)`. Generators are created on demand (no preheated singletons) — kept simple until profiling justifies otherwise.
+
 ## Notes
 
 - Design tokens stay per-app. PASKit has no design module — apps use SwiftUI defaults and their own per-app theme.
