@@ -14,10 +14,10 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 
 | Module | Provides |
 |--------|----------|
-| `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`). |
-| `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `MailComposerView` (iOS), `AppInfoFooter` (iOS). |
+| `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`); haptics (`Haptics.play`, `View.hapticOnTap`). |
+| `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `ChangelogView` (`ChangelogEntry` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS). |
 | `PASKitPurchases` | RevenueCat wrapper. **Stub today** — namespace placeholder only. |
-| `PASKitAnalytics` | PostHog facade. **Stub today** — namespace placeholder only. |
+| `PASKitAnalytics` | PostHog facade: `PASAnalytics.shared.setup(...)` / `.capture` / `.screen` / `.identify` / `.register` / `.reset` / `.optIn` / `.optOut` / `.flush` / `.isFeatureEnabled` / `.featureFlagPayload`. App owns event vocabulary as an extension on `PASAnalytics`. |
 | `PASKit` (umbrella) | Re-exports every module — one dependency line, `import` modules individually. |
 
 ## Conventions
@@ -55,6 +55,17 @@ try vault.set("token", source: "posthog", key: "apiKey")
 let token = try vault.get(source: "posthog", key: "apiKey")
 ```
 
+**4a. Haptics — `Haptics.play`, not raw `UIImpactFeedbackGenerator`.**
+Primitives only — apps decide what they mean. Pass an app-level preference for the gate.
+```swift
+import PASKitCore
+Haptics.play(.success, isEnabled: settings.hapticsEnabled)
+Haptics.play(.selection)
+// SwiftUI sugar — fires the haptic on tap, then runs the action:
+Text("Mark Done").hapticOnTap(.success) { markDone() }
+```
+iOS-only at the hardware level; macOS compiles to a no-op.
+
 **5. Lifecycle UI — use what `PASKitLifecycle` ships before writing your own.**
 
 Rate prompt:
@@ -73,7 +84,7 @@ let result = await VersionCheckManager().checkIfAppUpdateAvailable()
 // AppUpdateView(update:, forceUpdate: false) — dismissible nudge by default
 ```
 
-What's-new:
+What's-new (one-shot post-update sheet):
 ```swift
 WhatsNewView(appName: "MyApp", title: "What's New") {
     WhatsNewCard(symbol: "star.fill", title: "X", subtitle: "Y")
@@ -81,6 +92,23 @@ WhatsNewView(appName: "MyApp", title: "What's New") {
 } onContinue: { dismiss() }
 ```
 SF Symbol names for `symbol`, not asset names.
+
+Changelog (multi-version Settings screen — distinct from the one-shot `WhatsNewView`):
+```swift
+NavigationLink("Changelog") {
+    ChangelogView(entries: [
+        ChangelogEntry(version: "1.2.0", date: .now, items: [
+            .added("Live Activities on the home screen"),
+            .changed("Faster sync"),
+            .fixed("Crash on launch under iOS 18.0"),
+        ]),
+        ChangelogEntry(version: "1.1.0", items: [
+            .added("Widget"),
+            .note("First public beta."),
+        ]),
+    ])
+}
+```
 
 Feedback prompt — two-stage prompt that opens `FeedbackSheet` on accept. PASKit owns the form, the app owns the transport (the `onSubmit` closure):
 ```swift
@@ -131,7 +159,29 @@ SomeView().loading(isPresented: $isLoading) {
 ## Not yet built
 
 - `PASKitPurchases` is a stub. Use the RevenueCat SDK directly until the module is implemented; expand the stub when wiring up paywalls.
-- `PASKitAnalytics` is a stub. Use the PostHog SDK directly until the module is implemented.
+
+## Analytics — `PASAnalytics`, not raw `PostHogSDK`
+
+Configure once at launch, then capture from anywhere. PASKit owns the mechanism; the app owns the event vocabulary as a thin extension:
+```swift
+import PASKitAnalytics
+
+// At launch:
+PASAnalytics.shared.setup(.init(apiKey: AppKeys.posthog))
+
+// From anywhere:
+PASAnalytics.shared.capture("paywall_viewed")
+PASAnalytics.shared.screen("Home")
+PASAnalytics.shared.identify(userId: user.id, traits: ["plan": "pro"])
+PASAnalytics.shared.register(["app_theme": "dark"])
+PASAnalytics.shared.reset()                          // logout
+
+// App-side vocabulary lives as an extension — never inside PASKit:
+extension PASAnalytics {
+    func captureOnboardingCompleted() { capture("onboarding_completed") }
+}
+```
+Session replay is a config flag (`sessionReplay: true`), default off, iOS-only. Use the same user ID for `identify` as you pass to `PASKitPurchases.logIn` so analytics and revenue join.
 
 ## Baseline
 
