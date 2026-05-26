@@ -1,6 +1,6 @@
 # PASKitLifecycle
 
-**Status:** Built — nine components.
+**Status:** Built — ten components.
 **Dependencies:** `PASKitCore`. StoreKit, SwiftUI, MessageUI (iOS), UIKit (iOS).
 **Platforms:** iOS 18+, macOS 15+. The mail composer and the runtime app-icon loader are iOS-only (`#if canImport(MessageUI)` / `#if canImport(UIKit)`); the rest works on both.
 
@@ -30,6 +30,9 @@ SwiftUI view presenting the update prompt. System styling, `.borderedProminent` 
 
 ### WhatsNewView — ✅ built (`WhatsNewView.swift`)
 Declarative card-list view using `@WhatsNewCardResultBuilder` and a staggered `blurSlide` entrance animation. Strings (`appName`, `title`, `footerMessage`, `continueButtonTitle`) are parameters; cards take SF Symbol names. Styling via `.tint`, `.primary`, `.secondary`.
+
+### ChangelogView — ✅ built (`ChangelogView.swift`)
+Multi-version changelog list for Settings — distinct from `WhatsNewView` (single-release sheet shown once after an update). Apps supply `[ChangelogEntry]` (newest first); each entry's `items: [ChangelogItem]` are tagged `.added` / `.changed` / `.fixed` / `.note` and rendered with SF Symbols (`plus.circle`, `arrow.triangle.2.circlepath`, `wrench.adjustable`, `circle`) plus `.tint` accent. Resolves OurLittleSecret's bullet-list and WorkoutApp's `+/~/*` prefix variants into one shape. Section header = `v{version}` + optional formatted date.
 
 ### MailComposerView — ✅ built (`MailComposerView.swift`, iOS-only)
 Thin `UIViewControllerRepresentable` over `MFMailComposeViewController` — configurable recipients, subject, body, and an `onDismiss` `Result` callback. Static `canSendMail` check to gate presentation. iOS-only — `MessageUI` is not available on macOS.
