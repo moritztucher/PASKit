@@ -1,6 +1,6 @@
 # PASKitLifecycle
 
-**Status:** Built — eight components.
+**Status:** Built — nine components.
 **Dependencies:** `PASKitCore`. StoreKit, SwiftUI, MessageUI (iOS), UIKit (iOS).
 **Platforms:** iOS 18+, macOS 15+. The mail composer and the runtime app-icon loader are iOS-only (`#if canImport(MessageUI)` / `#if canImport(UIKit)`); the rest works on both.
 
@@ -18,6 +18,9 @@ App-lifecycle / app-meta UI — the housekeeping surfaces every app needs and th
 
 ### FeedbackSheet — ✅ built (`FeedbackSheet.swift`)
 In-app feedback form. PASKit owns the form UI (category picker, name, email, message); the caller owns the transport via `onSubmit: @Sendable (FeedbackPayload) async throws -> Void`. Configurable hero (`title`, `subtitle`, `heroSymbol`) and `categories` array. Adaptive layout — two-pane on regular width / macOS, stacked on compact iOS. Dismisses on successful submit; surfaces an alert on thrown errors.
+
+### LoadingOverlay — ✅ built (`LoadingOverlay.swift`)
+`View.loading(isPresented:message:)` (system-default `ProgressView` + optional caption) and `View.loading(isPresented:content:)` (custom view) — both render a centred card over a dimmed backdrop with a fade transition, blocking underlying interaction. PASKit owns the mechanism; apps that want a branded loading view (spinning app-icon, determinate progress ring) pass it via `content:`. `DefaultLoadingView` is public so apps can compose it directly. Extracted from XueTang's `LoadingOverlay` / `ProgressLoadingOverlay`.
 
 ### VersionCheckManager — ✅ built (`VersionCheckManager.swift`)
 `@MainActor public final class` — hits `https://itunes.apple.com/lookup?bundleId=...`, compares against `AppInfo.version`. Compares only major.minor — patch differences are ignored. Returns `Result?` (current / available version + App Store URL).
