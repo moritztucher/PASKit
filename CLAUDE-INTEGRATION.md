@@ -15,7 +15,7 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 | Module | Provides |
 |--------|----------|
 | `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`). |
-| `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `MailComposerView` (iOS), `AppInfoFooter` (iOS). |
+| `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `MailComposerView` (iOS), `AppInfoFooter` (iOS). |
 | `PASKitPurchases` | RevenueCat wrapper. **Stub today** — namespace placeholder only. |
 | `PASKitAnalytics` | PostHog facade. **Stub today** — namespace placeholder only. |
 | `PASKit` (umbrella) | Re-exports every module — one dependency line, `import` modules individually. |
@@ -111,6 +111,18 @@ if MailComposerView.canSendMail {
 ```
 
 Settings footer (iOS): `AppInfoFooter()` — renders app icon (via `CFBundleIcons`) + name + version.
+
+Loading overlay — system-default spinner over a dimmed backdrop:
+```swift
+SomeView().loading(isPresented: $isLoading, message: "Signing in…")
+```
+
+Or supply a branded loading view (custom animation, determinate progress, app-icon ring):
+```swift
+SomeView().loading(isPresented: $isLoading) {
+    MyBrandedLoadingView(progress: progress)
+}
+```
 
 **6. Styling — SwiftUI defaults + the standard environment.** PASKit views use `.tint`, system fonts, `.primary` / `.secondary`. Apps style at the call site (`.tint(.brand)`, `.font(...)`). PASKit owns no design layer — every app keeps its own theme.
 
