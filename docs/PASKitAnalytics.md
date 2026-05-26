@@ -1,8 +1,8 @@
 # PASKitAnalytics
 
-**Status:** Scaffolded — target + PostHog dependency wired (`Sources/PASKitAnalytics/`). Module API not yet written.
-**Build trigger:** When the first app needs analytics. Also unblocks XueTang (see below).
+**Status:** Built — thin PostHog facade compiling (`Sources/PASKitAnalytics/PASKitAnalytics.swift`).
 **Dependencies:** `PostHog` SDK (`posthog-ios`, from 3.48.3) + `PASKitCore`.
+**Platforms:** iOS 18+, macOS 15+. Session replay is iOS-only at the SDK level (`#if os(iOS)`-gated); the rest of the surface works on both.
 
 ## Purpose
 
@@ -11,31 +11,61 @@ A thin, concrete facade over PostHog. PostHog is the committed studio analytics 
 ## Scope — mechanism only
 
 PASKit owns the generic **mechanism**:
-- `configure(apiKey:)` — key injected, not read from Info.plist.
-- `identify` / `register` (super properties) / `reset`.
-- A generic `capture(event:properties:)`.
 
-Each app owns its **vocabulary** — its typed `captureXxx` methods, as a thin extension over `capture`. Event names and domain types never enter PASKit. (XueTang's `PostHogService` has 35 typed methods that are 100% XueTang vocabulary — those stay in XueTang.)
+- `setup(_:)` — configure PostHog from `PASAnalyticsConfig`. API key injected, never read from Info.plist.
+- `capture(_:properties:)` / `screen(_:properties:)` — generic event + screen surface.
+- `identify(userId:traits:)` / `register(_:)` / `reset()` — identity, super-properties, logout.
+- `optIn()` / `optOut()` / `flush()` — consent + lifecycle.
+- `isFeatureEnabled(_:)` / `featureFlagPayload(_:)` — feature-flag reads.
+
+Each app owns its **vocabulary** — its typed `captureXxx` methods, declared as a thin extension over `capture`. Event names and domain types never enter PASKit. (XueTang's `PostHogService` has 35 typed methods that are 100% XueTang vocabulary — those stay in XueTang.)
+
+## Public surface
+
+```swift
+public struct PASAnalyticsConfig: Sendable {
+    public let apiKey: String
+    public let host: String                              // default us.i.posthog.com
+    public let captureApplicationLifecycleEvents: Bool   // default true
+    public let captureScreenViews: Bool                  // default true
+    public let sessionReplay: Bool                       // default false — iOS only
+    public let debug: Bool                               // default false
+}
+
+@MainActor @Observable
+public final class PASAnalytics {
+    public static let shared: PASAnalytics
+    public private(set) var isConfigured: Bool
+    public func setup(_ config: PASAnalyticsConfig)
+    public func capture(_ event: String, properties: [String: Any]? = nil)
+    public func screen(_ name: String, properties: [String: Any]? = nil)
+    public func identify(userId: String, traits: [String: Any]? = nil)
+    public func register(_ properties: [String: Any])
+    public func reset()
+    public func optIn()
+    public func optOut()
+    public func flush()
+    public func isFeatureEnabled(_ key: String) -> Bool
+    public func featureFlagPayload(_ key: String) -> Any?
+}
+```
 
 ## Design decisions
 
 - **Concrete facade, no protocol.** Wrapped for ergonomics + one chokepoint, not for swappability.
-- **API key injected** via `configure(apiKey:)`. XueTang's `APIKeys.posthogKey` Info.plist reach-out does not travel.
-- **Session replay** — a `configure` parameter, **default OFF**. XueTang runs it on globally; replay has cost + privacy weight, opt in per app.
-- **DEBUG** — analytics disabled in DEBUG by default (XueTang's `#if !DEBUG` instinct), overridable via an `enabled:` flag.
-- **Unified identity** — `identify` consumes the same user ID as `PASKitPurchases.logIn`, so analytics and revenue join on one key.
-- **Feature flags / experiments — deferred.** PostHog supports them; no PAS app uses one. Add when an app needs a remote flag.
+- **API key injected** via `PASAnalyticsConfig`. The XueTang `APIKeys.posthogKey` Info.plist reach-out does not travel.
+- **Session replay** is a `PASAnalyticsConfig` field, **default OFF**. XueTang runs it on globally; replay has cost + privacy weight, opt in per app. iOS-only at the SDK level.
+- **`projectToken`** is used internally — PostHog deprecated the `apiKey` initializer. The PASKit-side parameter stays named `apiKey` for familiarity.
+- **No automatic DEBUG gate.** Apps decide whether to wire `setup` behind `#if !DEBUG`; PASKit does not silently swallow events. The `debug:` flag toggles PostHog SDK-side debug logging, not consent.
+- **Unified identity** — `identify` consumes the same user ID as `PASKitPurchases.logIn`, so analytics and revenue join on one key (once `PASKitPurchases` ships).
+- **`@MainActor @Observable`** — matches `NWReachability` and the rest of the PASKit surface; safe to observe from SwiftUI.
 
 ## Unblocks XueTang
 
-XueTang's `LessonAnalytics.swift` and `QuickReviewAnalytics.swift` are dead `os_log` shims explicitly waiting for a generic `capture(event:properties:)` surface `PostHogService` never grew. `PASKitAnalytics` *is* that surface — so this is the one module where retrofitting XueTang onto PASKit has real return.
+XueTang's `LessonAnalytics.swift` and `QuickReviewAnalytics.swift` are dead `os_log` shims explicitly waiting for a generic `capture(event:properties:)` surface `PostHogService` never grew. `PASKitAnalytics` *is* that surface — so retrofitting XueTang onto PASKit pays off here.
 
-## Extraction sources
+## Remaining
 
-- `XueTang/XueTangApp/Core/API (External)/PostHog/PostHogService.swift` — extract the ~50 lines of plumbing only (setup, identify, register, reset, release-only guard); leave the 35 typed methods app-side.
-
-## What needs to be done
-
-- [ ] Build the facade — `configure`, `identify`, `register`, `reset`, `capture`.
-- [ ] Session-replay + `enabled` config parameters.
-- [ ] Wire `identify` to the shared `PASKitPurchases` identity.
+- [ ] Feature-flag reload hook (PostHog supports `reloadFeatureFlags`; add when an app actually drives the lifecycle).
+- [ ] Group analytics (`group(type:key:groupProperties:)`) if any PAS app grows a B2B surface.
+- [ ] Unit tests — facade is thin, but the `isConfigured` guard is worth a test.
