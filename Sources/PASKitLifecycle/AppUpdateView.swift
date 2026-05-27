@@ -49,6 +49,8 @@ public struct AppUpdateView: View {
         }
         .padding(32)
         .frame(maxWidth: .infinity)
+        .presentationDetents([.medium])
+        .presentationDragIndicator(forceUpdate ? .hidden : .visible)
         .interactiveDismissDisabled(forceUpdate)
     }
 }
