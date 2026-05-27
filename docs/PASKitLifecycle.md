@@ -26,7 +26,7 @@ In-app feedback form. PASKit owns the form UI (category picker, name, email, mes
 `@MainActor public final class` — hits `https://itunes.apple.com/lookup?bundleId=...`, compares against `AppInfo.version`. Compares only major.minor — patch differences are ignored. Returns `Result?` (current / available version + App Store URL).
 
 ### AppUpdateView — ✅ built (`AppUpdateView.swift`)
-SwiftUI view presenting the update prompt. System styling, `.borderedProminent` "Update App" button that opens the App Store URL via `openURL`. `forceUpdate: Bool = false` controls dismissibility — defaults to a dismissible nudge; reserve `true` for security releases.
+SwiftUI view presenting the update prompt. System styling, `.borderedProminent` "Update App" button that opens the App Store URL via `openURL`. Self-sets `.presentationDetents([.medium])` so apps presenting it via `.sheet(item:)` get the right height automatically; drag indicator visible when dismissible. `forceUpdate: Bool = false` controls dismissibility — defaults to a dismissible nudge; reserve `true` for security releases.
 
 ### WhatsNewView — ✅ built (`WhatsNewView.swift`)
 Declarative card-list view using `@WhatsNewCardResultBuilder` and a staggered `blurSlide` entrance animation. Strings (`appName`, `title`, `footerMessage`, `continueButtonTitle`) are parameters; cards take SF Symbol names. Styling via `.tint`, `.primary`, `.secondary`.
