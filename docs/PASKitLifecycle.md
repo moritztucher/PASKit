@@ -1,6 +1,6 @@
 # PASKitLifecycle
 
-**Status:** Built — ten components.
+**Status:** Built — eleven components.
 **Dependencies:** `PASKitCore`. StoreKit, SwiftUI, MessageUI (iOS), UIKit (iOS).
 **Platforms:** iOS 18+, macOS 15+. The mail composer and the runtime app-icon loader are iOS-only (`#if canImport(MessageUI)` / `#if canImport(UIKit)`); the rest works on both.
 
@@ -39,6 +39,9 @@ Thin `UIViewControllerRepresentable` over `MFMailComposeViewController` — conf
 
 ### AppInfoFooter — ✅ built (`AppInfoFooter.swift`, iOS-only)
 Settings-screen footer: app icon + display name + version. Loads the app's own icon at runtime via `CFBundleIcons` → `CFBundlePrimaryIcon` → `CFBundleIconFiles`. iOS-only.
+
+### LiquidGlass — ✅ built (`LiquidGlass.swift`)
+`View.paskitGlass(_:in:)` and `View.paskitGlassButtonStyle(_:)`. iOS/macOS 26+ uses Apple's `glassEffect` + `.buttonStyle(.glass)`; earlier OSes fall back to `.regularMaterial` (+ optional tint overlay) / `.borderedProminent` (or `.bordered` for the clear variant). `PASGlass` is chainable — `.regular.tint(...)` colours the material, `.foreground(...)` colours the wrapped content. Surfaces only — PASKit deliberately does not wrap `.toolbarBackground` / `.toolbarForegroundStyle`; those are already cross-version and nav bars adopt Liquid Glass automatically on iOS 26.
 
 ## Notes
 
