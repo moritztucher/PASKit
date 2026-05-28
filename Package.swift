@@ -30,6 +30,9 @@ let package = Package(
         // Tooling — SimplyDanny/SwiftLintPlugins is the plugin-only distribution
         // of SwiftLint; avoids pulling swift-syntax into the dependency graph.
         .package(url: "https://github.com/SimplyDanny/SwiftLintPlugins", from: "0.59.0"),
+        // DocC — enables `swift package generate-documentation`. No catalog
+        // shipped; inline `///` comments drive the docs.
+        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.4.0"),
     ],
     targets: [
         .target(
