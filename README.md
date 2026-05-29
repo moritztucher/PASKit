@@ -12,8 +12,8 @@ One Swift package, one library product per module — an app imports only what i
 
 - **PASKitCore** — foundational utilities (`AppInfo`, `NetworkMonitor`) + the `PASTheme` contract — [docs](docs/PASKitCore.md)
 - **PASKitLifecycle** — app-lifecycle UI: rate prompt, update check, what's-new, feedback, app-info footer — [docs](docs/PASKitLifecycle.md)
-- **PASKitPurchases** — RevenueCat wrapper: entitlements, gating, hosted paywall — [docs](docs/PASKitPurchases.md)
 - **PASKitAnalytics** — PostHog facade — [docs](docs/PASKitAnalytics.md)
+- **PASKitPurchases** — **Planned (v0.2.0)** — not in v0.1.0. RevenueCat wrapper: entitlements, gating, hosted paywall — [docs](docs/PASKitPurchases.md)
 
 Modules are built on first real need, not scaffolded up front.
 
