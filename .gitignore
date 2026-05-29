@@ -7,6 +7,9 @@
 Packages/
 Package.resolved
 
+# DocC local build output
+docs/.docc-build/
+
 # Xcode
 DerivedData/
 build/

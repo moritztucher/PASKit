@@ -9,9 +9,10 @@ let package = Package(
     ],
     products: [
         // Umbrella — one dependency line gives access to every module.
+        // The PASKit target re-exports the others and owns the DocC catalog.
         .library(
             name: "PASKit",
-            targets: ["PASKitCore", "PASKitLifecycle", "PASKitAnalytics"]
+            targets: ["PASKit"]
         ),
         // Per-module — for surgical dependencies (e.g. an extension target that
         // must not link a vendor SDK).
@@ -37,6 +38,17 @@ let package = Package(
         // .package(url: "https://github.com/RevenueCat/purchases-ios-spm.git", from: "5.67.0"),
     ],
     targets: [
+        .target(
+            name: "PASKit",
+            dependencies: [
+                "PASKitCore",
+                "PASKitLifecycle",
+                "PASKitAnalytics",
+            ],
+            plugins: [
+                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
+            ]
+        ),
         .target(
             name: "PASKitCore",
             dependencies: [
