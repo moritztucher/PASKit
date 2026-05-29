@@ -3,7 +3,7 @@
 > **Status: Planned for v0.2.0.** Not part of the v0.1.0 release. This spec stays in the repo as the design target.
 
 **Status:** Deferred to v0.2.0 — module source and RevenueCat dependency are commented out in `Package.swift`. Module API not yet written.
-**Build trigger:** When the first app needs to take payment. (Candidate: the Analytics Dashboard, if it ships public with a paywall.)
+**Build trigger:** When the first consuming app needs to take payment.
 **Dependencies:** `RevenueCat` SDK (`purchases-ios-spm`, from 5.67.0) + `PASKitCore`. `RevenueCatUI` is wired in alongside the hosted-paywall code, not the scaffold.
 
 ## Purpose
@@ -26,8 +26,8 @@ A thin, concrete wrapper over RevenueCat — entitlements, feature gating, and p
 ## Design decisions
 
 - **Paywall = RevenueCat hosted.** There is no separate "paywall" module; paywall presentation lives here. Configured in the RevenueCat dashboard, updatable without an app release.
-- **Apple 2026 paywall compliance is a config checklist, not code.** Because the paywall is RC-hosted, PASKit cannot enforce layout. Compliance is a checklist for configuring the RC offering. Source: `decisions-pas.md` 2026-05-19.
-- **Unified identity.** `PASKitPurchases.logIn` and `PASKitAnalytics.identify` consume the same app-supplied user ID, so revenue and analytics data join on one key. XueTang does NOT do this — PostHog uses its own UUID, RevenueCat a separate `appUserID`. PASKit fixes it.
+- **Apple 2026 paywall compliance is a config checklist, not code.** Because the paywall is RC-hosted, PASKit cannot enforce layout. Compliance is a checklist for configuring the RC offering.
+- **Unified identity.** `PASKitPurchases.logIn` and `PASKitAnalytics.identify` consume the same app-supplied user ID, so revenue and analytics data join on one key. Common failure mode in apps that wire each SDK independently — PASKit closes the gap.
 
 ## Apple 2026 paywall compliance checklist
 

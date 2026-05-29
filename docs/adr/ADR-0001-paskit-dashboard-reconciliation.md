@@ -14,7 +14,7 @@ The discovery (mid-reconciliation, while migrating XueTang utilities into PASKit
 
 **1. One studio shared package = PASKit.** The studio-generic code that lived inside the AnalyticsDashboard migrates out into PASKit; the Dashboard depends on PASKit. The `AD` prefix is app-scoped — the wrong scope for code reused across the portfolio.
 
-**2. Baseline: iOS 18 / macOS 15 / swift-tools 6.3 / Swift 6 mode.** Matches the Dashboard so migrated code ports without down-port checks. New studio apps target iOS 18+ regardless. Cost: PASKit cannot serve an iOS-17 app — XueTang and earlier apps will not be refactored onto it anyway.
+**2. Baseline: iOS 18 / macOS 15 / swift-tools 6.3 / Swift 6 mode.** Matches the Dashboard so migrated code ports without down-port checks. New apps target iOS 18+ regardless. Cost: PASKit cannot serve an iOS-17 app — older apps in the portfolio will not be refactored onto it anyway.
 
 **3. One package, multiple targets, per-module + umbrella products.** Rejected the separate-packages-per-module restructure. Per-module products keep extension targets surgical (a widget cannot accidentally link RevenueCat); the umbrella `PASKit` product gives the main app target a single dependency line. Same shape as ADR-0002 for the same reasons.
 
@@ -54,4 +54,3 @@ The discovery (mid-reconciliation, while migrating XueTang utilities into PASKit
 - AnalyticsDashboard `docs/decisions/ADR-0002-package-architecture.md`
 - PASKit `docs/PASKitCore.md`, `docs/PASKitLifecycle.md`, `docs/PASKitPurchases.md`, `docs/PASKitAnalytics.md`
 - Commits — PASKit: `b9c6e90` (Core migration), `d01b9d7` → `ec3ce3a` (PASKitUI added + reverted), `3fc233f` (SwiftLint), `1f1cf56` (PASKitLifecycle), `83c9c1c` (os.Logger). Dashboard: `c9c91ba` (Phase 2 reconciliation).
-- Vault `Memory/Decisions/decisions-pas.md` — 2026-05-23 reconciliation entry.
