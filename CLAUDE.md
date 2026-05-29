@@ -4,11 +4,13 @@ Guidance for Claude Code when working in this repository.
 
 ## What This Is
 
-PASKit is the shared service package for **Pocket Apps Studio** — the reusable core across every PAS app. It is a multi-target Swift package: each app depends only on the modules it needs. Building a capability once here is what makes apps 3, 4, 5 cheap to ship.
+PASKit is a modular Swift Package for solo iOS founders and small studios shipping multiple apps. Each app depends only on the modules it needs. Building a capability once here is what makes apps 3, 4, 5 cheap to ship.
+
+Extracted from production apps over 12 months. Public under MIT from v0.1.0.
 
 ## For consuming apps
 
-Apps that adopt PASKit should add this line to their own `CLAUDE.md` so Claude sessions in that app know PASKit's surface and follow its conventions:
+An app that adopts PASKit can wire Claude Code into its surface by adding this line to its own `CLAUDE.md`:
 
 ```
 @<relative-path>/CLAUDE-INTEGRATION.md
@@ -44,7 +46,7 @@ PASKit is grown deliberately, not scaffolded upfront.
 
 1. **Build on real need.** A module or feature is built when the *first real app* needs that capability — never speculatively. No module exists "for any future app" before one concrete app consumes it.
 2. **Design app-agnostic from line one.** Even when extracted from one app, code is written as library code — no app-specific strings, types, colours, or assumptions baked in.
-3. **Mechanism, not vocabulary.** PASKit owns the generic mechanism; each app owns its specific vocabulary and config, injected at the call site. (Template: XueTang's `AppRatingHelper` — generic prompt logic in the helper, trigger thresholds supplied by the caller.)
+3. **Mechanism, not vocabulary.** PASKit owns the generic mechanism; each app owns its specific vocabulary and config, injected at the call site. (Template: the rate-prompt helper — generic prompt logic in the helper, trigger thresholds supplied by the caller.)
 4. **Extract from shipped apps, then generalise.** Prefer lifting proven code from a shipped app over designing in the abstract. Survey the real implementation first.
 5. **Wrap third-party SDKs thinly.** RevenueCat and PostHog are wrapped as concrete facades for ergonomics — not behind swap-protocols. PASKit does not pretend it will change vendors.
 
@@ -54,7 +56,7 @@ One Swift package, one library product per module, so an app imports only what i
 
 ## Git
 
-- Remote: `git@github-personal:moritztucher/PASKit.git` (private). The `github-personal` SSH alias is required — plain `github.com` fails publickey auth.
+- Remote: `https://github.com/moritztucher/PASKit.git`.
 - Work on `develop`; `main` is the release branch.
 - Commit only files related to a single concern.
 

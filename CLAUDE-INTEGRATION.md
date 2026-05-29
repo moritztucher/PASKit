@@ -201,8 +201,8 @@ Session replay is a config flag (`sessionReplay: true`), default off, iOS-only. 
 
 ## Baseline
 
-iOS 18+, macOS 15+, swift-tools 6.3, Swift 6 language mode. SwiftLint via `SimplyDanny/SwiftLintPlugins` — studio-wide `.swiftlint.yml` (matches the Dashboard's).
+iOS 18+, macOS 15+, swift-tools 6.3, Swift 6 language mode. SwiftLint via `SimplyDanny/SwiftLintPlugins` — one shared `.swiftlint.yml` in the repo root.
 
 ## Build philosophy
 
-A capability earns a place in PASKit when it's used across the studio's portfolio (RevenueCat and PostHog are universal; UI/theme is per-app). Build on real need — a module is built when the first real app needs it, designed app-agnostic from line one. PASKit owns the *mechanism*; each app owns its *vocabulary* (event names, entitlement names, brand styling).
+A capability earns a place in PASKit when it's used across multiple apps (RevenueCat and PostHog are universal; UI/theme is per-app). Build on real need — a module is built when the first real app needs it, designed app-agnostic from line one. PASKit owns the *mechanism*; each app owns its *vocabulary* (event names, entitlement names, brand styling).

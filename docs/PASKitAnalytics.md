@@ -6,7 +6,7 @@
 
 ## Purpose
 
-A thin, concrete facade over PostHog. PostHog is the committed studio analytics vendor — this is **not** a vendor-agnostic protocol (one conformer forever is a YAGNI tax). Apps call the PASKit facade, not `PostHogSDK` directly.
+A thin, concrete facade over PostHog. PostHog is the committed analytics vendor — this is **not** a vendor-agnostic protocol (one conformer forever is a YAGNI tax). Apps call the PASKit facade, not `PostHogSDK` directly.
 
 ## Scope — mechanism only
 
@@ -18,7 +18,7 @@ PASKit owns the generic **mechanism**:
 - `optIn()` / `optOut()` / `flush()` — consent + lifecycle.
 - `isFeatureEnabled(_:)` / `featureFlagPayload(_:)` — feature-flag reads.
 
-Each app owns its **vocabulary** — its typed `captureXxx` methods, declared as a thin extension over `capture`. Event names and domain types never enter PASKit. (XueTang's `PostHogService` has 35 typed methods that are 100% XueTang vocabulary — those stay in XueTang.)
+Each app owns its **vocabulary** — its typed `captureXxx` methods, declared as a thin extension over `capture`. Event names and domain types never enter PASKit. (One prior app had 35 typed `captureXxx` methods — all of them 100% app-specific vocabulary that belongs in the app, not in PASKit.)
 
 ## Public surface
 
@@ -53,19 +53,15 @@ public final class PASAnalytics {
 ## Design decisions
 
 - **Concrete facade, no protocol.** Wrapped for ergonomics + one chokepoint, not for swappability.
-- **API key injected** via `PASAnalyticsConfig`. The XueTang `APIKeys.posthogKey` Info.plist reach-out does not travel.
-- **Session replay** is a `PASAnalyticsConfig` field, **default OFF**. XueTang runs it on globally; replay has cost + privacy weight, opt in per app. iOS-only at the SDK level.
+- **API key injected** via `PASAnalyticsConfig`. PASKit does not read from `Info.plist` — apps source the key from their secrets layer and pass it in.
+- **Session replay** is a `PASAnalyticsConfig` field, **default OFF**. Replay has cost + privacy weight, opt in per app. iOS-only at the SDK level.
 - **`projectToken`** is used internally — PostHog deprecated the `apiKey` initializer. The PASKit-side parameter stays named `apiKey` for familiarity.
 - **No automatic DEBUG gate.** Apps decide whether to wire `setup` behind `#if !DEBUG`; PASKit does not silently swallow events. The `debug:` flag toggles PostHog SDK-side debug logging, not consent.
 - **Unified identity** — `identify` consumes the same user ID as `PASKitPurchases.logIn`, so analytics and revenue join on one key (once `PASKitPurchases` ships).
 - **`@MainActor @Observable`** — matches `NWReachability` and the rest of the PASKit surface; safe to observe from SwiftUI.
 
-## Unblocks XueTang
-
-XueTang's `LessonAnalytics.swift` and `QuickReviewAnalytics.swift` are dead `os_log` shims explicitly waiting for a generic `capture(event:properties:)` surface `PostHogService` never grew. `PASKitAnalytics` *is* that surface — so retrofitting XueTang onto PASKit pays off here.
-
 ## Remaining
 
 - [ ] Feature-flag reload hook (PostHog supports `reloadFeatureFlags`; add when an app actually drives the lifecycle).
-- [ ] Group analytics (`group(type:key:groupProperties:)`) if any PAS app grows a B2B surface.
+- [ ] Group analytics (`group(type:key:groupProperties:)`) if any consuming app grows a B2B surface.
 - [ ] Unit tests — facade is thin, but the `isConfigured` guard is worth a test.
