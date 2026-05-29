@@ -31,4 +31,4 @@ Swift Package Manager — add the dependency in Xcode or `Package.swift`:
 
 ## License
 
-Proprietary. © 2026 Pocket Apps Studio. All rights reserved. See [LICENSE](LICENSE).
+MIT. © 2026 Moritz Tucher. See [LICENSE](LICENSE).

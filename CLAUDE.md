@@ -60,4 +60,4 @@ One Swift package, one library product per module, so an app imports only what i
 
 ## License
 
-Proprietary — © Pocket Apps Studio, all rights reserved. See `LICENSE`.
+MIT — © 2026 Moritz Tucher. See `LICENSE`.
