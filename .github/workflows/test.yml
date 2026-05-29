@@ -39,7 +39,12 @@ jobs:
         run: swift build
 
       - name: Test
-        run: swift test
+        run: |
+          if [ -d "Tests" ]; then
+            swift test
+          else
+            echo "No Tests/ directory yet — skipping. Add tests under Tests/ to enable."
+          fi
 
   ios-simulator-build:
     name: iOS Simulator Build
