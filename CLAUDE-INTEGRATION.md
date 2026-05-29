@@ -16,7 +16,7 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 |--------|----------|
 | `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`); haptics (`Haptics.play`, `View.hapticOnTap`). |
 | `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `View.paskitGlass(...)` + `View.paskitGlassButtonStyle(...)` (iOS 26 with pre-26 fallback), `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `ChangelogView` (`ChangelogEntry` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS). |
-| `PASKitPurchases` | RevenueCat wrapper. **Stub today** — namespace placeholder only. |
+| `PASKitPurchases` | **Planned (v0.2.0)** — not in v0.1.0. RevenueCat wrapper. Use the RevenueCat SDK directly until this module lands. |
 | `PASKitAnalytics` | PostHog facade: `PASAnalytics.shared.setup(...)` / `.capture` / `.screen` / `.identify` / `.register` / `.reset` / `.optIn` / `.optOut` / `.flush` / `.isFeatureEnabled` / `.featureFlagPayload`. App owns event vocabulary as an extension on `PASAnalytics`. |
 | `PASKit` (umbrella) | Re-exports every module — one dependency line, `import` modules individually. |
 
@@ -174,7 +174,7 @@ Do not apply `paskitGlass` to nav bars or toolbars — they adopt Liquid Glass a
 
 ## Not yet built
 
-- `PASKitPurchases` is a stub. Use the RevenueCat SDK directly until the module is implemented; expand the stub when wiring up paywalls.
+- `PASKitPurchases` lands in v0.2.0. Use the RevenueCat SDK directly until then.
 
 ## Analytics — `PASAnalytics`, not raw `PostHogSDK`
 
