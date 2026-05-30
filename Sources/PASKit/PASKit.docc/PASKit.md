@@ -24,4 +24,14 @@ iOS 18+, macOS 15+. Swift 6 language mode. SwiftLint via `SimplyDanny/SwiftLintP
 
 ### Build philosophy
 
-PASKit is grown deliberately, not scaffolded upfront. A capability earns a place when the *first real app* needs it. Code is designed app-agnostic from line one. PASKit owns the *mechanism*; each app owns its *vocabulary* (event names, entitlement names, brand styling).
+PASKit is grown deliberately, not scaffolded upfront. A capability earns a place when the *first real app* needs it. Code is designed app-agnostic from line one. PASKit owns the *mechanism*; each app owns its *vocabulary* (event names, entitlement names, brand styling). The full version of these rules — and what they mean for contributors — lives in <doc:BuildPhilosophy>.
+
+## Topics
+
+### Essentials
+- <doc:GettingStarted>
+- <doc:BuildPhilosophy>
+
+### Modules
+- <doc:LifecycleOverview>
+- <doc:AnalyticsOverview>
