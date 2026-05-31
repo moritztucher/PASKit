@@ -1,6 +1,6 @@
 # PASKitAnalytics
 
-**Status:** Built — thin PostHog facade compiling (`Sources/PASKitAnalytics/PASKitAnalytics.swift`).
+**Status:** Built — thin PostHog facade compiling. Sources split across `PASAnalytics.swift` (the facade class) and `PASAnalyticsConfig.swift` (the config struct).
 **Dependencies:** `PostHog` SDK (`posthog-ios`, from 3.48.3) + `PASKitCore`.
 **Platforms:** iOS 18+, macOS 15+. Session replay is iOS-only at the SDK level (`#if os(iOS)`-gated); the rest of the surface works on both.
 

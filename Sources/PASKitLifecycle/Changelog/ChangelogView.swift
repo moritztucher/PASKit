@@ -10,39 +10,6 @@
 
 import SwiftUI
 
-/// A single line in a version's changelog. The kind drives the row icon —
-/// apps choose which bucket each line belongs in.
-public enum ChangelogItem: Sendable, Hashable {
-    case added(String)
-    case changed(String)
-    case fixed(String)
-    case note(String)
-
-    public var text: String {
-        switch self {
-        case let .added(text), let .changed(text), let .fixed(text), let .note(text):
-            return text
-        }
-    }
-}
-
-/// One released version's changelog. `id` defaults to `version`, so versions
-/// must be unique within a `ChangelogView`.
-public struct ChangelogEntry: Identifiable, Sendable, Hashable {
-
-    public let id: String
-    public let version: String
-    public let date: Date?
-    public let items: [ChangelogItem]
-
-    public init(version: String, date: Date? = nil, items: [ChangelogItem]) {
-        self.id = version
-        self.version = version
-        self.date = date
-        self.items = items
-    }
-}
-
 /// A `List`-backed changelog view. Newest first. Each entry is one section;
 /// each item renders the kind icon + text. Icons resolve to SF Symbols and
 /// use `.tint` for accent — apps style at the call site.

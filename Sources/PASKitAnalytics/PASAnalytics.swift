@@ -1,5 +1,5 @@
 //
-//  PASKitAnalytics.swift
+//  PASAnalytics.swift
 //  PASKitAnalytics
 //
 //  Thin concrete facade over PostHogSDK. PASKit owns the generic surface
@@ -11,34 +11,6 @@
 import Foundation
 import PASKitCore
 import PostHog
-
-/// Config passed to `PASAnalytics.setup`. API key is injected, never read
-/// from Info.plist — apps source it from their secrets layer.
-public struct PASAnalyticsConfig: Sendable {
-
-    public let apiKey: String
-    public let host: String
-    public let captureApplicationLifecycleEvents: Bool
-    public let captureScreenViews: Bool
-    public let sessionReplay: Bool
-    public let debug: Bool
-
-    public init(
-        apiKey: String,
-        host: String = "https://us.i.posthog.com",
-        captureApplicationLifecycleEvents: Bool = true,
-        captureScreenViews: Bool = true,
-        sessionReplay: Bool = false,
-        debug: Bool = false
-    ) {
-        self.apiKey = apiKey
-        self.host = host
-        self.captureApplicationLifecycleEvents = captureApplicationLifecycleEvents
-        self.captureScreenViews = captureScreenViews
-        self.sessionReplay = sessionReplay
-        self.debug = debug
-    }
-}
 
 /// PostHog facade. `PASAnalytics.shared.setup(...)` once at launch, then
 /// `capture` / `identify` / `register` / `reset` / `screen` from anywhere.

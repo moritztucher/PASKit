@@ -1,13 +1,13 @@
 //
-//  LoadingOverlay.swift
+//  View+Loading.swift
 //  PASKitLifecycle
 //
-//  Loading-state view modifier. Two overloads — a system-default spinner+text
-//  via `.loading(isPresented:message:)`, and a fully custom view via
-//  `.loading(isPresented:content:)`. PASKit owns the overlay mechanism (dim
-//  backdrop, interaction blocking, fade transition); apps own the visual
-//  treatment via the `content:` variant when they need brand-styled loading
-//  (e.g. spinning app-icon, determinate progress ring).
+//  Loading-state view modifier. Two overloads — a system-default
+//  spinner + caption via `.loading(isPresented:message:)`, and a fully
+//  custom view via `.loading(isPresented:content:)`. PASKit owns the
+//  overlay mechanism (dim backdrop, interaction blocking, fade transition);
+//  apps own the visual treatment via the `content:` variant when they need
+//  brand-styled loading (e.g. spinning app-icon, determinate progress ring).
 //
 
 import SwiftUI
@@ -44,33 +44,6 @@ public extension View {
         @ViewBuilder content: @escaping () -> Content
     ) -> some View {
         modifier(LoadingModifier(isPresented: isPresented, overlayContent: content))
-    }
-}
-
-/// PASKit's default loading view — a large `ProgressView`, optional caption,
-/// rounded `.regularMaterial` card. Exposed so apps that want the default
-/// treatment with extra decoration can compose it directly.
-public struct DefaultLoadingView: View {
-
-    public let message: String?
-
-    public init(message: String? = nil) {
-        self.message = message
-    }
-
-    public var body: some View {
-        VStack(spacing: 12) {
-            ProgressView()
-                .controlSize(.large)
-            if let message, !message.isEmpty {
-                Text(message)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .padding(24)
-        .background(.regularMaterial, in: .rect(cornerRadius: 16))
     }
 }
 

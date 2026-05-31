@@ -131,34 +131,12 @@ public struct WhatsNewView: View {
     }
 }
 
-extension View {
+private extension View {
     @ViewBuilder
     func blurSlide(_ show: Bool) -> some View {
         compositingGroup()
             .blur(radius: show ? 0 : 10)
             .opacity(show ? 1 : 0)
             .offset(y: show ? 0 : 100)
-    }
-}
-
-/// One feature card in a `WhatsNewView`. `symbol` is an SF Symbol name.
-public struct WhatsNewCard: Identifiable, Sendable {
-    public var id = UUID().uuidString
-    public let symbol: String
-    public let title: String
-    public let subtitle: String
-
-    public init(symbol: String, title: String, subtitle: String) {
-        self.symbol = symbol
-        self.title = title
-        self.subtitle = subtitle
-    }
-}
-
-/// Declarative card builder for `WhatsNewView`.
-@resultBuilder
-public struct WhatsNewCardResultBuilder {
-    public static func buildBlock(_ components: WhatsNewCard...) -> [WhatsNewCard] {
-        Array(components)
     }
 }
