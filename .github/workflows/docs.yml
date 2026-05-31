@@ -1,0 +1,74 @@
+name: Deploy DocC
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Allow only one concurrent deployment; let in-progress runs complete.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build DocC archive
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 16
+        run: sudo xcode-select -switch /Applications/Xcode_16.app
+
+      - name: Cache SPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Generate combined documentation
+        run: |
+          swift package \
+            --allow-writing-to-directory ./docs/.docc-build \
+            generate-documentation \
+            --target PASKit \
+            --target PASKitCore \
+            --target PASKitLifecycle \
+            --target PASKitAnalytics \
+            --enable-experimental-combined-documentation \
+            --transform-for-static-hosting \
+            --hosting-base-path PASKit \
+            --output-path ./docs/.docc-build
+
+      - name: Add index redirect
+        run: |
+          cat > ./docs/.docc-build/index.html <<'EOF'
+          <!doctype html>
+          <meta http-equiv="refresh" content="0; url=./documentation/paskit/">
+          <link rel="canonical" href="./documentation/paskit/">
+          EOF
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs/.docc-build
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
