@@ -15,7 +15,7 @@ Sources are grouped by topic — one public type per file:
 ```
 Sources/PASKitCore/
 ├── AppMetadata/   AppInfo.swift, DeviceInfo.swift
-├── Networking/    NetworkService.swift, URLSessionNetworkService.swift
+├── Networking/    NetworkService.swift, URLSessionNetworkService.swift, URLRequest+cURL.swift
 ├── Reachability/  NetworkStatus.swift, Reachability.swift, NWReachability.swift
 ├── Credentials/   CredentialVault.swift, KeychainCredentialVault.swift
 ├── Logging/       PASLogger.swift
@@ -32,6 +32,7 @@ Sources/PASKitCore/
 ### Networking — ✅ built
 - `NetworkService` protocol — the networking seam.
 - `URLSessionNetworkService` — default implementation (2xx handling, 429/Retry-After, decode).
+- `URLRequest.cURL(pretty:)` — render a request as a paste-ready `curl` command for terminal replay during debugging.
 
 ### Reachability — ✅ built
 - `NetworkStatus` — observed value (`.unknown` / `.online` / `.offline`).
