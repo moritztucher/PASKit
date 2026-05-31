@@ -9,20 +9,6 @@
 
 import SwiftUI
 
-public struct FeedbackPayload: Sendable, Equatable {
-    public let category: String
-    public let name: String
-    public let email: String
-    public let message: String
-
-    public init(category: String, name: String, email: String, message: String) {
-        self.category = category
-        self.name = name
-        self.email = email
-        self.message = message
-    }
-}
-
 public struct FeedbackSheet: View {
 
     public let title: String

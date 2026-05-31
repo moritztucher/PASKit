@@ -8,40 +8,60 @@
 
 App-lifecycle / app-meta UI — the housekeeping surfaces every app needs and that stay brand-light. Views use SwiftUI defaults (system colours, system fonts, `.tint`); apps style via the standard SwiftUI environment (`.tint(.brand)`, `.font(...)`, etc.). PASKit has no design module — theme stays per-app.
 
+## Layout
+
+Sources are grouped by topic — one public type per file:
+
+```
+Sources/PASKitLifecycle/
+├── Rating/        View+PresentAppRating.swift
+├── Feedback/      FeedbackPayload.swift, FeedbackSheet.swift,
+│                  View+PresentAppFeedback.swift, MailComposerView.swift
+├── Update/        VersionCheckManager.swift, AppUpdateView.swift
+├── WhatsNew/      WhatsNewCard.swift, WhatsNewCardResultBuilder.swift, WhatsNewView.swift
+├── Changelog/     ChangelogItem.swift, ChangelogEntry.swift, ChangelogView.swift
+├── Loading/       DefaultLoadingView.swift, View+Loading.swift
+├── LiquidGlass/   PASGlass.swift, PASGlassButtonVariant.swift, View+PaskitGlass.swift
+└── Settings/      AppInfoFooter.swift
+```
+
 ## Components
 
-### AppRatingHelper — ✅ built (`AppRatingHelper.swift`)
-`View.presentAppRating(initialCondition:askLaterCondition:)` — a view modifier wrapping StoreKit's `requestReview`. Two-stage alert (Yes / Ask Later / Never Ask Me Again; then Yes / Nope). Caller supplies the trigger conditions as async closures. State persisted via `@AppStorage`. Extracted from a shipped Mandarin-learning app.
+### Rating — ✅ built
+`View.presentAppRating(initialCondition:askLaterCondition:)` — wraps StoreKit's `requestReview` with a two-stage alert (Yes / Ask Later / Never Ask Me Again; then Yes / Nope). Caller supplies trigger conditions as async closures. State persisted via `@AppStorage`. Extracted from a shipped Mandarin-learning app.
 
-### AppFeedbackHelper — ✅ built (`AppFeedbackHelper.swift`)
-`View.presentAppFeedback(initialCondition:askLaterCondition:content:)` — same two-stage pattern as `presentAppRating`, but accepting presents the supplied view as a sheet (typically `FeedbackSheet`). The destination view is injected so apps can wire any feedback view. One-shot, state persisted via `@AppStorage`. Cross-platform.
+### Feedback — ✅ built
+- `View.presentAppFeedback(initialCondition:askLaterCondition:content:)` — same two-stage pattern as `presentAppRating`, but accepting presents the supplied view as a sheet (typically `FeedbackSheet`). Destination view is injected so apps can wire any feedback view. One-shot, persisted via `@AppStorage`. Cross-platform.
+- `FeedbackSheet` — in-app feedback form. PASKit owns the form UI (category picker, name, email, message); caller owns the transport via `onSubmit: @Sendable (FeedbackPayload) async throws -> Void`. Configurable hero (`title`, `subtitle`, `heroSymbol`) and `categories`. Adaptive — two-pane on regular width / macOS, stacked on compact iOS. Surfaces an alert on thrown errors.
+- `FeedbackPayload` — the typed payload (`category`, `name`, `email`, `message`).
+- `MailComposerView` (iOS-only) — thin `UIViewControllerRepresentable` over `MFMailComposeViewController`. Static `canSendMail` check to gate presentation.
 
-### FeedbackSheet — ✅ built (`FeedbackSheet.swift`)
-In-app feedback form. PASKit owns the form UI (category picker, name, email, message); the caller owns the transport via `onSubmit: @Sendable (FeedbackPayload) async throws -> Void`. Configurable hero (`title`, `subtitle`, `heroSymbol`) and `categories` array. Adaptive layout — two-pane on regular width / macOS, stacked on compact iOS. Dismisses on successful submit; surfaces an alert on thrown errors.
+### Update — ✅ built
+- `VersionCheckManager` — `@MainActor public final class`. Hits `https://itunes.apple.com/lookup?bundleId=...`, compares against `AppInfo.version`. Compares only major.minor — patch differences ignored. Returns `Result?` (current / available version + App Store URL).
+- `AppUpdateView` — SwiftUI view presenting the update prompt. System styling, `.borderedProminent` "Update App" button. Self-sets `.presentationDetents([.medium])` so `.sheet(item:)` apps get the right height automatically; drag indicator visible when dismissible. `forceUpdate: Bool = false` controls dismissibility — reserve `true` for security releases.
 
-### LoadingOverlay — ✅ built (`LoadingOverlay.swift`)
-`View.loading(isPresented:message:)` (system-default `ProgressView` + optional caption) and `View.loading(isPresented:content:)` (custom view) — both render a centred card over a dimmed backdrop with a fade transition, blocking underlying interaction. PASKit owns the mechanism; apps that want a branded loading view (spinning app-icon, determinate progress ring) pass it via `content:`. `DefaultLoadingView` is public so apps can compose it directly. Extracted from a shipped Mandarin-learning app.
+### WhatsNew — ✅ built
+- `WhatsNewView` — declarative card-list view using `@WhatsNewCardResultBuilder` with a staggered `blurSlide` entrance. Strings (`appName`, `title`, `footerMessage`, `continueButtonTitle`) parameterised; cards take SF Symbol names. Styling via `.tint`, `.primary`, `.secondary`.
+- `WhatsNewCard` — one feature card (symbol + title + subtitle).
+- `WhatsNewCardResultBuilder` — declarative card builder.
 
-### VersionCheckManager — ✅ built (`VersionCheckManager.swift`)
-`@MainActor public final class` — hits `https://itunes.apple.com/lookup?bundleId=...`, compares against `AppInfo.version`. Compares only major.minor — patch differences are ignored. Returns `Result?` (current / available version + App Store URL).
+### Changelog — ✅ built
+- `ChangelogView` — multi-version changelog list for Settings (distinct from `WhatsNewView`'s single-release sheet). Section header = `v{version}` + optional formatted date.
+- `ChangelogEntry` — one released version's record (`version`, `date`, `[ChangelogItem]`).
+- `ChangelogItem` — `.added` / `.changed` / `.fixed` / `.note`, rendered with SF Symbols (`plus.circle`, `arrow.triangle.2.circlepath`, `wrench.adjustable`, `circle`) plus `.tint` accent. Resolves bullet-list and `+/~/*` prefix variants from prior apps into one typed shape.
 
-### AppUpdateView — ✅ built (`AppUpdateView.swift`)
-SwiftUI view presenting the update prompt. System styling, `.borderedProminent` "Update App" button that opens the App Store URL via `openURL`. Self-sets `.presentationDetents([.medium])` so apps presenting it via `.sheet(item:)` get the right height automatically; drag indicator visible when dismissible. `forceUpdate: Bool = false` controls dismissibility — defaults to a dismissible nudge; reserve `true` for security releases.
+### Loading — ✅ built
+- `View.loading(isPresented:message:)` (system-default `ProgressView` + optional caption) and `View.loading(isPresented:content:)` (custom view). Both render a centred card over a dimmed backdrop with a fade transition, blocking underlying interaction.
+- `DefaultLoadingView` — public so apps that want the default treatment with extra decoration can compose it directly. Extracted from a shipped Mandarin-learning app.
 
-### WhatsNewView — ✅ built (`WhatsNewView.swift`)
-Declarative card-list view using `@WhatsNewCardResultBuilder` and a staggered `blurSlide` entrance animation. Strings (`appName`, `title`, `footerMessage`, `continueButtonTitle`) are parameters; cards take SF Symbol names. Styling via `.tint`, `.primary`, `.secondary`.
+### LiquidGlass — ✅ built
+- `View.paskitGlass(_:in:)` (surfaces) and `View.paskitGlassButtonStyle(_:)` (buttons). iOS/macOS 26+ uses Apple's `glassEffect` + `.buttonStyle(.glass)`; earlier OSes fall back to `.regularMaterial` (+ optional tint overlay) / `.borderedProminent` (or `.bordered` for `.clear`).
+- `PASGlass` — chainable: `.regular.tint(...)` colours the material, `.foreground(...)` colours the wrapped content.
+- `PASGlassButtonVariant` — `.regular` / `.clear`.
+- Surfaces only — PASKit deliberately does not wrap `.toolbarBackground` / `.toolbarForegroundStyle`; those are already cross-version and nav bars adopt Liquid Glass automatically on iOS 26.
 
-### ChangelogView — ✅ built (`ChangelogView.swift`)
-Multi-version changelog list for Settings — distinct from `WhatsNewView` (single-release sheet shown once after an update). Apps supply `[ChangelogEntry]` (newest first); each entry's `items: [ChangelogItem]` are tagged `.added` / `.changed` / `.fixed` / `.note` and rendered with SF Symbols (`plus.circle`, `arrow.triangle.2.circlepath`, `wrench.adjustable`, `circle`) plus `.tint` accent. Resolves bullet-list and `+/~/*` prefix variants from prior apps into one typed shape. Section header = `v{version}` + optional formatted date.
-
-### MailComposerView — ✅ built (`MailComposerView.swift`, iOS-only)
-Thin `UIViewControllerRepresentable` over `MFMailComposeViewController` — configurable recipients, subject, body, and an `onDismiss` `Result` callback. Static `canSendMail` check to gate presentation. iOS-only — `MessageUI` is not available on macOS.
-
-### AppInfoFooter — ✅ built (`AppInfoFooter.swift`, iOS-only)
-Settings-screen footer: app icon + display name + version. Loads the app's own icon at runtime via `CFBundleIcons` → `CFBundlePrimaryIcon` → `CFBundleIconFiles`. iOS-only.
-
-### LiquidGlass — ✅ built (`LiquidGlass.swift`)
-`View.paskitGlass(_:in:)` and `View.paskitGlassButtonStyle(_:)`. iOS/macOS 26+ uses Apple's `glassEffect` + `.buttonStyle(.glass)`; earlier OSes fall back to `.regularMaterial` (+ optional tint overlay) / `.borderedProminent` (or `.bordered` for the clear variant). `PASGlass` is chainable — `.regular.tint(...)` colours the material, `.foreground(...)` colours the wrapped content. Surfaces only — PASKit deliberately does not wrap `.toolbarBackground` / `.toolbarForegroundStyle`; those are already cross-version and nav bars adopt Liquid Glass automatically on iOS 26.
+### Settings — ✅ built
+- `AppInfoFooter` (iOS-only) — Settings-screen footer with app icon (via `CFBundleIcons` → `CFBundlePrimaryIcon` → `CFBundleIconFiles`) + display name + version.
 
 ## Notes
 
