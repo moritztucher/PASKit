@@ -78,4 +78,5 @@ jobs:
             -scheme ${{ matrix.scheme }} \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath .build/derived \
+            -skipPackagePluginValidation \
             build
