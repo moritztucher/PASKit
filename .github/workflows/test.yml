@@ -16,7 +16,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Select latest stable Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -27,7 +27,7 @@ jobs:
         run: swift --version
 
       - name: Cache SPM dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .build
           key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
@@ -57,7 +57,7 @@ jobs:
         scheme: [PASKitCore, PASKitLifecycle, PASKitAnalytics]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Select latest stable Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -65,7 +65,7 @@ jobs:
           xcode-version: latest-stable
 
       - name: Cache SPM dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .build
           key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
