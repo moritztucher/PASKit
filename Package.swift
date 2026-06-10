@@ -19,9 +19,7 @@ let package = Package(
         .library(name: "PASKitCore", targets: ["PASKitCore"]),
         .library(name: "PASKitLifecycle", targets: ["PASKitLifecycle"]),
         .library(name: "PASKitAnalytics", targets: ["PASKitAnalytics"]),
-        // PASKitPurchases is planned for v0.2.0 — kept here as the reference
-        // for where the RevenueCat-backed product will be re-added.
-        // .library(name: "PASKitPurchases", targets: ["PASKitPurchases"]),
+        .library(name: "PASKitPurchases", targets: ["PASKitPurchases"]),
     ],
     dependencies: [
         // Foundational
@@ -34,8 +32,8 @@ let package = Package(
         // DocC — enables `swift package generate-documentation`. No catalog
         // shipped; inline `///` comments drive the docs.
         .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.4.0"),
-        // RevenueCat dependency re-added in v0.2.0 when PASKitPurchases lands.
-        // .package(url: "https://github.com/RevenueCat/purchases-ios-spm.git", from: "5.67.0"),
+        // RevenueCat — committed vendor for PASKitPurchases.
+        .package(url: "https://github.com/RevenueCat/purchases-ios-spm.git", from: "5.67.0"),
     ],
     targets: [
         .target(
@@ -44,6 +42,7 @@ let package = Package(
                 "PASKitCore",
                 "PASKitLifecycle",
                 "PASKitAnalytics",
+                "PASKitPurchases",
             ],
             plugins: [
                 .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
@@ -75,17 +74,16 @@ let package = Package(
                 .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
             ]
         ),
-        // PASKitPurchases target — planned for v0.2.0. When it lands, restore:
-        // .target(
-        //     name: "PASKitPurchases",
-        //     dependencies: [
-        //         "PASKitCore",
-        //         .product(name: "RevenueCat", package: "purchases-ios-spm"),
-        //     ],
-        //     plugins: [
-        //         .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
-        //     ]
-        // ),
+        .target(
+            name: "PASKitPurchases",
+            dependencies: [
+                "PASKitCore",
+                .product(name: "RevenueCat", package: "purchases-ios-spm"),
+            ],
+            plugins: [
+                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
+            ]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )

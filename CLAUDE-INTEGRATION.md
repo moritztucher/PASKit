@@ -16,7 +16,7 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 |--------|----------|
 | `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`); haptics (`Haptics.play`, `View.hapticOnTap`). |
 | `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `View.paskitGlass(...)` + `View.paskitGlassButtonStyle(...)` (iOS 26 with pre-26 fallback), `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `ChangelogView` (`ChangelogEntry` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS). |
-| `PASKitPurchases` | **Planned (v0.2.0)** — not in v0.1.0. RevenueCat wrapper. Use the RevenueCat SDK directly until this module lands. |
+| `PASKitPurchases` | RevenueCat facade: `PASPurchases.shared.configure(...)` / `.customerInfo` (observable, stream-fed) / `.isEntitled` / `.offerings` / `.currentOffering` / `.offering(identifier:)` / `.products` / `.purchase(package/product)` → `PASPurchaseResult` / `.restorePurchases` / `.logIn` / `.logOut`. App owns entitlement + product IDs and the paywall UI. |
 | `PASKitAnalytics` | PostHog facade: `PASAnalytics.shared.setup(...)` / `.capture` / `.screen` / `.identify` / `.register` / `.reset` / `.optIn` / `.optOut` / `.flush` / `.isFeatureEnabled` / `.featureFlagPayload`. App owns event vocabulary as an extension on `PASAnalytics`. |
 | `PASKit` (umbrella) | Re-exports every module — one dependency line, `import` modules individually. |
 
@@ -172,9 +172,31 @@ Do not apply `paskitGlass` to nav bars or toolbars — they adopt Liquid Glass a
 
 **7. Don't reinvent what PASKit owns.** Before writing a local utility for networking, keychain, reachability, version/build reads, app-icon loading at runtime, rate prompt, what's-new, update check, or settings footer — check PASKit. If something belongs in PASKit but isn't there yet, extend PASKit rather than ship a parallel local copy.
 
-## Not yet built
+## Purchases — `PASPurchases`, not raw `Purchases`
 
-- `PASKitPurchases` lands in v0.2.0. Use the RevenueCat SDK directly until then.
+Configure once at launch, then gate on the observable `customerInfo` and run purchase flows through the facade. RevenueCat types pass through unwrapped — this is a convenience wrapper, not a vendor abstraction:
+```swift
+import PASKitPurchases
+
+// At launch (public SDK key, never a secret key):
+PASPurchases.shared.configure(.init(apiKey: AppKeys.revenueCat))
+
+// App-side entitlement vocabulary — typed, never stringly at call sites:
+enum Entitlement: String { case premium }
+
+// Gate features — observable, updates live across renewals/refunds/devices:
+if PASPurchases.shared.isEntitled(Entitlement.premium) { … }
+
+// Custom paywall flow:
+let offering = try await PASPurchases.shared.currentOffering()
+let result = try await PASPurchases.shared.purchase(package)
+guard !result.userCancelled else { return }
+
+// Consumables by product ID (coin packs etc.) — app credits its own wallet:
+let products = try await PASPurchases.shared.products(["app.coins.200"])
+try await PASPurchases.shared.purchase(products[0])
+```
+Rules: never cache an `isPro` boolean — derive from `customerInfo`. Always offer an explicit "Restore Purchases" control (`restorePurchases()`). Never run raw StoreKit listeners (`Transaction.updates`) alongside — RevenueCat owns StoreKit. RevenueCat's server-side Virtual Currencies need a backend to debit; backend-less apps keep the wallet client-side and sell consumables. Hosted paywall (`RevenueCatUI`) is not in the module yet — added when the first app wants it.
 
 ## Analytics — `PASAnalytics`, not raw `PostHogSDK`
 

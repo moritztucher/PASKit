@@ -10,3 +10,4 @@
 @_exported import PASKitCore
 @_exported import PASKitLifecycle
 @_exported import PASKitAnalytics
+@_exported import PASKitPurchases
