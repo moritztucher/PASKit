@@ -21,6 +21,19 @@ public struct URLSessionNetworkService: NetworkService {
         as type: T.Type,
         decoder: JSONDecoder
     ) async throws -> T {
+        let data = try await validatedData(for: request)
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            throw PASError.decodingFailed(description: String(describing: error))
+        }
+    }
+
+    public func send(_ request: URLRequest) async throws {
+        _ = try await validatedData(for: request)
+    }
+
+    private func validatedData(for request: URLRequest) async throws -> Data {
         let (data, response): (Data, URLResponse)
         do {
             (data, response) = try await session.data(for: request)
@@ -43,11 +56,6 @@ public struct URLSessionNetworkService: NetworkService {
             }
             throw PASError.requestFailed(statusCode: http.statusCode, body: body)
         }
-
-        do {
-            return try decoder.decode(T.self, from: data)
-        } catch {
-            throw PASError.decodingFailed(description: String(describing: error))
-        }
+        return data
     }
 }

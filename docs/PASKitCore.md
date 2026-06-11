@@ -30,7 +30,7 @@ Sources/PASKitCore/
 - `DeviceInfo` — `modelIdentifier` cross-platform; `systemName` / `systemVersion` / `model` / `summary` iOS-only.
 
 ### Networking — ✅ built
-- `NetworkService` protocol — the networking seam.
+- `NetworkService` protocol — the networking seam. Two sends: decode-response (`send(_:as:decoder:)`) and fire-and-forget (`send(_:)` — status-validated, body discarded; for webhooks/pings that return 204 or an unneeded body).
 - `URLSessionNetworkService` — default implementation (2xx handling, 429/Retry-After, decode).
 - `URLRequest.cURL(pretty:)` — render a request as a paste-ready `curl` command for terminal replay during debugging.
 
