@@ -32,7 +32,7 @@ Sources/PASKitLifecycle/
 
 ### Feedback — ✅ built
 - `View.presentAppFeedback(initialCondition:askLaterCondition:content:)` — same two-stage pattern as `presentAppRating`, but accepting presents the supplied view as a sheet (typically `FeedbackSheet`). Destination view is injected so apps can wire any feedback view. One-shot, persisted via `@AppStorage`. Cross-platform.
-- `FeedbackSheet` — in-app feedback form. PASKit owns the form UI (category picker, name, email, message); caller owns the transport via `onSubmit: @Sendable (FeedbackPayload) async throws -> Void`. Configurable hero (`title`, `subtitle`, `heroSymbol`) and `categories`. Adaptive — two-pane on regular width / macOS, stacked on compact iOS. Surfaces an alert on thrown errors.
+- `FeedbackSheet` — in-app feedback form. PASKit owns the form UI (category picker, name, email, message); caller owns the transport via `onSubmit: @Sendable (FeedbackPayload) async throws -> Void`. Configurable: hero (`title`, `subtitle`, `heroSymbol` — `nil` hides the symbol), `categories`, prefill (`initialName` / `initialEmail` — pass known identity so users don't retype), `showsCloseButton` (ⓧ top-trailing; replaces Cancel on compact). Adaptive — two-pane on regular width / macOS with inline Cancel/Send, stacked on compact iOS with a full-width large Send. Surfaces an alert on thrown errors. Apps with a locked design language can bypass the form and build their own UI over `FeedbackPayload` (XueTang V2 does) — payload + transport stay the shared mechanism.
 - `FeedbackPayload` — the typed payload (`category`, `name`, `email`, `message`).
 - `MailComposerView` (iOS-only) — thin `UIViewControllerRepresentable` over `MFMailComposeViewController`. Static `canSendMail` check to gate presentation.
 

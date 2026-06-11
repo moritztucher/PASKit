@@ -128,9 +128,15 @@ Or present `FeedbackSheet` directly from a Settings row (no prompt gating):
 @State private var showFeedback = false
 // Button("Send Feedback") { showFeedback = true }
 //   .sheet(isPresented: $showFeedback) {
-//       FeedbackSheet { payload in try await sendFeedback(payload) }
+//       FeedbackSheet(
+//           heroSymbol: nil,                    // hide the symbol (default "lifepreserver")
+//           initialName: user.name,             // prefill known identity
+//           initialEmail: user.email,
+//           showsCloseButton: true              // ⓧ top-trailing; drops Cancel on compact
+//       ) { payload in try await sendFeedback(payload) }
 //   }
 ```
+Apps with a locked design language can skip `FeedbackSheet` and build their own form over `FeedbackPayload`, sharing only the transport.
 
 Mail composer is still available for the simple "open a prefilled mail draft" use case (iOS-only):
 ```swift
