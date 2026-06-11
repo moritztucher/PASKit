@@ -20,6 +20,7 @@ let package = Package(
         .library(name: "PASKitLifecycle", targets: ["PASKitLifecycle"]),
         .library(name: "PASKitAnalytics", targets: ["PASKitAnalytics"]),
         .library(name: "PASKitPurchases", targets: ["PASKitPurchases"]),
+        .library(name: "PASKitNotifications", targets: ["PASKitNotifications"]),
     ],
     dependencies: [
         // Foundational
@@ -43,6 +44,7 @@ let package = Package(
                 "PASKitLifecycle",
                 "PASKitAnalytics",
                 "PASKitPurchases",
+                "PASKitNotifications",
             ],
             plugins: [
                 .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
@@ -70,6 +72,13 @@ let package = Package(
                 "PASKitCore",
                 .product(name: "PostHog", package: "posthog-ios"),
             ],
+            plugins: [
+                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
+            ]
+        ),
+        .target(
+            name: "PASKitNotifications",
+            dependencies: ["PASKitCore"],
             plugins: [
                 .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
             ]

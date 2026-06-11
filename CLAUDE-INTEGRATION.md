@@ -18,6 +18,7 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 | `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `View.paskitGlass(...)` + `View.paskitGlassButtonStyle(...)` (iOS 26 with pre-26 fallback), `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `ChangelogView` (`ChangelogEntry` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS). |
 | `PASKitPurchases` | RevenueCat facade: `PASPurchases.shared.configure(...)` / `.customerInfo` (observable, stream-fed) / `.isEntitled` / `.offerings` / `.currentOffering` / `.offering(identifier:)` / `.products` / `.purchase(package/product)` → `PASPurchaseResult` / `.restorePurchases` / `.logIn` / `.logOut`. App owns entitlement + product IDs and the paywall UI. |
 | `PASKitAnalytics` | PostHog facade: `PASAnalytics.shared.setup(...)` / `.capture` / `.screen` / `.identify` / `.register` / `.reset` / `.optIn` / `.optOut` / `.flush` / `.isFeatureEnabled` / `.featureFlagPayload`. App owns event vocabulary as an extension on `PASAnalytics`. |
+| `PASKitNotifications` | Local-notification facade: `PASNotifications.shared.configure(...)` / `.authorizationStatus` + `.isAuthorized` (observable) / `.onResponse` (tap routing, cold-start buffered) / `.requestAuthorization` / `.schedule(PASNotificationRequest)` / `.cancel(ids:)` / `.cancelAll` / `.pendingIDs` / `.setBadgeCount`. App owns scheduling policy, copy, identifiers, and navigation. |
 | `PASKit` (umbrella) | Re-exports every module — one dependency line, `import` modules individually. |
 
 ## Conventions
@@ -170,7 +171,7 @@ Do not apply `paskitGlass` to nav bars or toolbars — they adopt Liquid Glass a
 
 **6. Styling — SwiftUI defaults + the standard environment.** PASKit views use `.tint`, system fonts, `.primary` / `.secondary`. Apps style at the call site (`.tint(.brand)`, `.font(...)`). PASKit owns no design layer — every app keeps its own theme.
 
-**7. Don't reinvent what PASKit owns.** Before writing a local utility for networking, keychain, reachability, version/build reads, app-icon loading at runtime, rate prompt, what's-new, update check, or settings footer — check PASKit. If something belongs in PASKit but isn't there yet, extend PASKit rather than ship a parallel local copy.
+**7. Don't reinvent what PASKit owns.** Before writing a local utility for networking, keychain, reachability, version/build reads, app-icon loading at runtime, rate prompt, what's-new, update check, settings footer, or local notifications (permission, scheduling, tap routing) — check PASKit. If something belongs in PASKit but isn't there yet, extend PASKit rather than ship a parallel local copy.
 
 ## Purchases — `PASPurchases`, not raw `Purchases`
 
@@ -220,6 +221,40 @@ extension PASAnalytics {
 }
 ```
 Session replay is a config flag (`sessionReplay: true`), default off, iOS-only. Use the same user ID for `identify` as you pass to `PASKitPurchases.logIn` so analytics and revenue join.
+
+## Notifications — `PASNotifications`, not raw `UNUserNotificationCenter`
+
+Configure once at launch (installs the one notification-center delegate), register the tap router where navigation lives, then schedule/cancel with stable app-vocabulary identifiers. PASKit owns the mechanism; the app owns scheduling policy, copy, and where a tap navigates:
+```swift
+import PASKitNotifications
+
+// At launch — before a cold-start tap can arrive:
+PASNotifications.shared.configure()   // PASNotificationsConfig(foregroundPresentation:) to customize
+
+// Where navigation lives — cold-start taps are buffered until this runs:
+PASNotifications.shared.onResponse { response in
+    router.handle(destination: response.userInfo["destination"])
+}
+
+// Permission at an earned moment (post-first-delight), never at first launch:
+let granted = try await PASNotifications.shared.requestAuthorization()
+
+// Observable gating — drive permission UI from authorizationStatus / isAuthorized:
+if PASNotifications.shared.isAuthorized { … }
+
+// Schedule idempotently — re-using an id replaces the pending request:
+try await PASNotifications.shared.schedule(PASNotificationRequest(
+    id: "streak-protection",
+    title: "Your streak ends at midnight",
+    body: "4 hours left — one quick lesson keeps it alive.",
+    userInfo: ["destination": "path"],
+    trigger: .calendar(DateComponents(hour: 20), repeats: false)
+))
+
+// Cancel when the condition clears (e.g. the user opened the app today):
+PASNotifications.shared.cancel(ids: ["streak-protection"])
+```
+Rules: never cache a permission boolean — observe `authorizationStatus` (auto-refreshed on iOS foreground return). Use stable, app-vocabulary notification ids (`"streak-protection"`), not UUIDs — replace-on-reschedule + `cancel(ids:)` depend on them. `userInfo` is `[String: String]` routing keys only, not state. Triggers: `.interval(_:repeats:)`, `.calendar(DateComponents, repeats:)`, `.at(Date)`. Remote push (APNs/FCM/OneSignal) is not in the module — added when the first app adopts server-side push; local scheduling works without `configure`, but foreground presentation and tap routing need it.
 
 ## Baseline
 
