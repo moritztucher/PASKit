@@ -20,7 +20,8 @@ Sources/PASKitCore/
 ├── Credentials/   CredentialVault.swift, KeychainCredentialVault.swift
 ├── Logging/       PASLogger.swift
 ├── Errors/        PASError.swift
-├── Haptics/       PASHaptic.swift, Haptics.swift, View+HapticOnTap.swift
+├── Haptics/       PASHaptic.swift, Haptics.swift, View+HapticOnTap.swift,
+│                  PASHapticSequence.swift
 ├── Settings/      UserDefaultsStorable.swift, PASSettingsStore.swift, PASDefault.swift,
 │                  PASDraft.swift
 ├── Styling/       Animation+ReducedMotion.swift, Color+LightDark.swift,
@@ -58,6 +59,7 @@ Sources/PASKitCore/
 - `PASHaptic` — primitive-only enum (`.light` … `.heavy`, `.success` / `.warning` / `.error`, `.selection`) — no semantic aliases; vocabulary stays per-app.
 - `Haptics.play(_:isEnabled:)` — one-call wrapper over `UIImpactFeedbackGenerator` / `UINotificationFeedbackGenerator` / `UISelectionFeedbackGenerator`. Caller supplies the enabled-gate.
 - `View.hapticOnTap(_:isEnabled:action:)` — SwiftUI sugar that fires the haptic on tap then runs the action.
+- `PASHapticSequence` + `Haptics.play(_ sequence:isEnabled:)` — multi-step patterns as data (`Step(haptic, delay)`), replacing hand-written `Task.sleep` chains. Presets with timings lifted from shipped apps: `.celebration` (medium → success), `.milestone` (heavy → success → light), `.levelUp` (rising), `.triplePulse` (heavy ×3, 350 ms — timer alerts). Fire-and-forget, sub-second; no cancellation until a real app needs one.
 
 iOS-only at the hardware level; macOS compiles to a no-op via `#if canImport(UIKit)`.
 

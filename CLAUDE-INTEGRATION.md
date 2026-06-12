@@ -65,6 +65,9 @@ Haptics.play(.success, isEnabled: settings.hapticsEnabled)
 Haptics.play(.selection)
 // SwiftUI sugar — fires the haptic on tap, then runs the action:
 Text("Mark Done").hapticOnTap(.success) { markDone() }
+// Multi-step patterns — presets or custom sequences, not Task.sleep chains:
+Haptics.play(.celebration, isEnabled: settings.hapticsEnabled)  // also .milestone / .levelUp / .triplePulse
+Haptics.play(PASHapticSequence([.init(.soft, delay: 0), .init(.success, delay: 0.2)]))
 ```
 iOS-only at the hardware level; macOS compiles to a no-op.
 
