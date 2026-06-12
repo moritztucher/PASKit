@@ -1,6 +1,6 @@
 # PASKitLifecycle
 
-**Status:** Built — thirteen components.
+**Status:** Built — fourteen components.
 **Dependencies:** `PASKitCore`. StoreKit, SwiftUI, MessageUI (iOS), UIKit (iOS).
 **Platforms:** iOS 18+, macOS 15+. The mail composer and the runtime app-icon loader are iOS-only (`#if canImport(MessageUI)` / `#if canImport(UIKit)`); the rest works on both.
 
@@ -26,6 +26,7 @@ Sources/PASKitLifecycle/
 ├── Onboarding/    PASOnboardingFlow.swift, PASOnboardingDirection.swift,
 │                  View+PASOnboardingTransition.swift, PASOnboardingProgressBar.swift
 ├── Development/   View+PASDevelopmentOverlay.swift, PASDevelopmentMenu.swift
+├── Toast/         View+PASToast.swift, PASToast.swift
 └── Settings/      AppInfoFooter.swift
 ```
 
@@ -77,6 +78,11 @@ Sources/PASKitLifecycle/
 - `View.pasDevelopmentOverlay(alignment:menu:)` — floating "DEV" capsule (hammer + monospaced label, white on `.tint`, `accessibilityIdentifier("PAS_DEV_OVERLAY")`) presenting the app's dev menu as a sheet. **Compile-time DEBUG-gated**: in release the modifier body is `self` — the symbol stays available so call sites build in every configuration; the menu closure is never invoked in release but must compile (gate DEBUG-only menu types *inside* the closure, or gate the call site). TestFlight builds are release config, so testers never see it; a runtime escape hatch gets added only if dev tooling in TestFlight becomes a real need.
 - `PASDevelopmentMenu(title:content:)` — menu container chrome: `NavigationStack` + `Form` + inline title + Done. Sections are the app's vocabulary (state toggles, demo seeds, reset buttons, mock-screen links) as plain `Form` content.
 - Extracted from four apps' independent dev tooling (floating-overlay, dedicated screen, and settings-section variants); the shell is shared, every menu's contents stay per-app.
+
+### Toast — ✅ built
+- `View.pasToast(isPresented:duration:alignment:content:)` and `View.pasToast(item:duration:alignment:content:)` — toast lifecycle: overlay placement (default `.bottom`), slide+fade transition (fade-only under Reduce Motion), spring animation, auto-dismiss after `duration` (default 4s; `nil` = sticky). Dismiss runs on `.task(id:)` so structured cancellation re-arms the timer correctly — a new `item` restarts it (the stale-timer bug a bare `Task.sleep` causes can't happen). Use `item:` whenever consecutive triggers change content.
+- `PASToast` — default content row: optional SF symbol + tint, message, optional trailing action ("Undo"); `.ultraThickMaterial` with a Reduce Transparency solid fallback, 16pt rounded, soft shadow. Apps with a locked design language pass their own view and share only the lifecycle.
+- Extracted from three apps' hand-rolled toasts (undo snackbar, saved-to-Photos capsule, set-logged row).
 
 ### Settings — ✅ built
 - `AppInfoFooter` (iOS-only) — Settings-screen footer with app icon (via `CFBundleIcons` → `CFBundlePrimaryIcon` → `CFBundleIconFiles`) + display name + version.

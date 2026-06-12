@@ -48,7 +48,7 @@ Sources/PASKitSharing/
 ## Notes
 
 - Card designs, captions, CTA chrome (e.g. an Instagram-gradient button), and share-option carousels stay per-app.
-- The "Saved to Photos" confirmation toast is not here — a generic toast/snackbar is a separate planned extraction.
+- The "Saved to Photos" confirmation toast lives in PASKitLifecycle: `View.pasToast` + `PASToast`.
 
 ## Remaining
 

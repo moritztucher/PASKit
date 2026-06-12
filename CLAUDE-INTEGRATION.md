@@ -15,7 +15,7 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 | Module | Provides |
 |--------|----------|
 | `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`); haptics (`Haptics.play`, `View.hapticOnTap`); settings (`PASSettingsStore` + `@PASDefault` + `UserDefaultsStorable`); draft persistence (`PASDraft`); styling mechanisms (`Animation.respectingReducedMotion`, `View.pasAnimation`, `Color(light:dark:)`, `Font.pasScaled`, `PASFontRegistration`); calendar math + durations (`Date.pas…` helpers, `PASDurationFormat`). |
-| `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `View.paskitGlass(...)` + `View.paskitGlassButtonStyle(...)` (iOS 26 with pre-26 fallback), `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `ChangelogView` (`ChangelogEntry` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS), onboarding engine (`PASOnboardingFlow` + `View.pasOnboardingTransition` + `PASOnboardingProgressBar`), dev-menu scaffold (`View.pasDevelopmentOverlay` + `PASDevelopmentMenu`). |
+| `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `View.paskitGlass(...)` + `View.paskitGlassButtonStyle(...)` (iOS 26 with pre-26 fallback), `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `ChangelogView` (`ChangelogEntry` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS), onboarding engine (`PASOnboardingFlow` + `View.pasOnboardingTransition` + `PASOnboardingProgressBar`), dev-menu scaffold (`View.pasDevelopmentOverlay` + `PASDevelopmentMenu`), toasts (`View.pasToast` + `PASToast`). |
 | `PASKitPurchases` | RevenueCat facade: `PASPurchases.shared.configure(...)` / `.customerInfo` (observable, stream-fed) / `.isEntitled` / `.offerings` / `.currentOffering` / `.offering(identifier:)` / `.products` / `.purchase(package/product)` → `PASPurchaseResult` / `.restorePurchases` / `.logIn` / `.logOut`. App owns entitlement + product IDs and the paywall UI. |
 | `PASKitAnalytics` | PostHog facade: `PASAnalytics.shared.setup(...)` / `.capture` / `.screen` / `.identify` / `.register` / `.reset` / `.optIn` / `.optOut` / `.flush` / `.isFeatureEnabled` / `.featureFlagPayload`. App owns event vocabulary as an extension on `PASAnalytics`. |
 | `PASKitNotifications` | Local-notification facade: `PASNotifications.shared.configure(...)` / `.authorizationStatus` + `.isAuthorized` (observable) / `.onResponse` (tap routing, cold-start buffered) / `.requestAuthorization` / `.schedule(PASNotificationRequest)` / `.cancel(ids:)` / `.cancelAll` / `.pendingIDs` / `.setBadgeCount`. App owns scheduling policy, copy, identifiers, and navigation. |
@@ -178,6 +178,16 @@ if MailComposerView.canSendMail {
 ```
 
 Settings footer (iOS): `AppInfoFooter()` — renders app icon (via `CFBundleIcons`) + name + version.
+
+Toasts — lifecycle (placement, transition, auto-dismiss with correct re-arm) from PASKit; content is `PASToast` or any app view:
+```swift
+.pasToast(isPresented: $showUndo, duration: 5) {
+    PASToast(message: "Habit completed", actionTitle: "Undo") { undo() }
+}
+// Content changes per trigger? Use item: — a new item restarts the timer:
+.pasToast(item: $confirmation, duration: 2) { PASToast(symbol: "checkmark.circle.fill", symbolTint: .green, message: $0.text) }
+```
+`duration: nil` = sticky. Default placement `.bottom`; pass `alignment: .top` for banners.
 
 Dev menu — DEBUG-only floating "DEV" capsule + menu container; release builds compile to a no-op. Menu sections are the app's vocabulary (state toggles, demo seeds, resets, mock-screen links). Gate DEBUG-only menu types *inside* the closure so call sites build in release:
 ```swift
