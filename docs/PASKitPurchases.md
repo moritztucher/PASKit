@@ -20,6 +20,10 @@ A thin, concrete wrapper over RevenueCat — configuration, live entitlement sta
 | `purchase(_ package:)` / `purchase(_ product:)` → `PASPurchaseResult` | Purchase flow; result carries `customerInfo`, `transaction`, `userCancelled`. |
 | `restorePurchases()` | Wire to an explicit "Restore Purchases" control (App Review requirement). |
 | `logIn(userId:)` / `logOut()` | Identity. **Shares one identity with `PASKitAnalytics`** — pass the same app-supplied user ID to both so revenue and analytics join on one key (convention, not code coupling — the modules stay independent). |
+| `offering(firstOf:)` | Offering fallback chain: first existing identifier, else `currentOffering()` — the "campaign offering, else default" pattern. |
+| `StoreProduct.pasSavingsPercent(comparedToMonthly:)` / `PASPricingMath.savingsPercent` | Honest savings-%: yearly per-month price against the **live** monthly price, so the badge stays correct per storefront and after price changes. `nil` when ≤ 0 — never a "save 0%" badge. Pure math is public for tests. |
+| `Package.pasHasFreeTrial` / `StoreProduct.pasHasFreeTrial` | Intro offer is a free trial — drives "Start N-day free trial" CTAs and fine print. |
+| `PASPaywallFlow` | `@Observable` purchase/restore state machine for app-owned paywall UI: `isPurchasing`, `errorMessage` + alert-friendly `isShowingError` binding, user-cancel swallowed silently, `nil`-package → unreachable message, clean-but-unentitled restore → "no purchase found". Copy parameterizable at init (English defaults). **Writes no app state** — returns whether the entitlement is active (for dismissal flow); gating stays on `customerInfo`. |
 
 ## Out of scope
 

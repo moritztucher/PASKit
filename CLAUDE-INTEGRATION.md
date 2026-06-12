@@ -282,8 +282,18 @@ enum Entitlement: String { case premium }
 // Gate features — observable, updates live across renewals/refunds/devices:
 if PASPurchases.shared.isEntitled(Entitlement.premium) { … }
 
-// Custom paywall flow:
-let offering = try await PASPurchases.shared.currentOffering()
+// Custom paywall flow — pricing math + state machine, not hand-rolled:
+let offering = try await PASPurchases.shared.offering(firstOf: ["campaign", "default"])  // falls back to current
+let savings = offering?.annual?.storeProduct
+    .pasSavingsPercent(comparedToMonthly: offering?.monthly?.storeProduct)   // Int? — honest, live-price-based
+let showTrial = offering?.annual?.pasHasFreeTrial == true                    // CTA: "Start free trial"
+
+@State private var flow = PASPaywallFlow()   // isPurchasing / errorMessage / $flow.isShowingError
+// Button: if await flow.purchase(selectedPackage, entitlement: Entitlement.premium) { dismiss() }
+// Restore: if await flow.restore(entitlement: Entitlement.premium) { dismiss() }
+// User-cancel → false with no error; nil package → "unreachable" message; copy overridable at init.
+
+// Raw flow still available when the state machine doesn't fit:
 let result = try await PASPurchases.shared.purchase(package)
 guard !result.userCancelled else { return }
 
