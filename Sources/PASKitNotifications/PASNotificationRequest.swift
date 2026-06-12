@@ -80,9 +80,9 @@ public enum PASNotificationTrigger: Sendable {
 
     var unTrigger: UNNotificationTrigger {
         switch self {
-        case .interval(let seconds, let repeats):
+        case let .interval(seconds, repeats):
             UNTimeIntervalNotificationTrigger(timeInterval: seconds, repeats: repeats)
-        case .calendar(let components, let repeats):
+        case let .calendar(components, repeats):
             UNCalendarNotificationTrigger(dateMatching: components, repeats: repeats)
         }
     }
