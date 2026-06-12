@@ -14,7 +14,7 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 
 | Module | Provides |
 |--------|----------|
-| `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`); haptics (`Haptics.play`, `View.hapticOnTap`). |
+| `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`); haptics (`Haptics.play`, `View.hapticOnTap`); settings (`PASSettingsStore` + `@PASDefault` + `UserDefaultsStorable`). |
 | `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `View.paskitGlass(...)` + `View.paskitGlassButtonStyle(...)` (iOS 26 with pre-26 fallback), `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `ChangelogView` (`ChangelogEntry` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS). |
 | `PASKitPurchases` | RevenueCat facade: `PASPurchases.shared.configure(...)` / `.customerInfo` (observable, stream-fed) / `.isEntitled` / `.offerings` / `.currentOffering` / `.offering(identifier:)` / `.products` / `.purchase(package/product)` → `PASPurchaseResult` / `.restorePurchases` / `.logIn` / `.logOut`. App owns entitlement + product IDs and the paywall UI. |
 | `PASKitAnalytics` | PostHog facade: `PASAnalytics.shared.setup(...)` / `.capture` / `.screen` / `.identify` / `.register` / `.reset` / `.optIn` / `.optOut` / `.flush` / `.isFeatureEnabled` / `.featureFlagPayload`. App owns event vocabulary as an extension on `PASAnalytics`. |
@@ -66,6 +66,22 @@ Haptics.play(.selection)
 Text("Mark Done").hapticOnTap(.success) { markDone() }
 ```
 iOS-only at the hardware level; macOS compiles to a no-op.
+
+**4b. User preferences — `PASSettingsStore` + `@PASDefault`, not hand-rolled UserDefaults plumbing.**
+Subclass once, one line per setting. The declared value is the default; keys are the app's vocabulary. No `@Observable`, no key enum, no `didSet` write-through, no `access`/`withMutation` boilerplate:
+```swift
+import PASKitCore
+
+@MainActor
+final class SettingsStore: PASSettingsStore {
+    @PASDefault("settings.hapticsEnabled") var hapticsEnabled = true
+    @PASDefault("settings.weightUnit")     var weightUnit: WeightUnit =
+        Locale.current.measurementSystem == .metric ? .kg : .lb   // locale-aware default
+    @PASDefault("settings.customRest")     var customRest: Int?   // nil = key absent, no 0-sentinels
+}
+extension WeightUnit: UserDefaultsStorable {}  // any RawRepresentable enum — empty extension
+```
+Inject via `.environment(settings)`; views read properties and observe automatically (granularity is per-store, which is fine at settings scale — split stores if a hot value churns). App Group sharing and tests inject a suite: `SettingsStore(defaults: UserDefaults(suiteName: "group.…")!)`. Storable out of the box: `Bool`, `Int`, `Double`, `String`, `Date`, `Data`, `URL`, optionals of those, raw-representable enums. Reset one setting with `removeValue(forKey:)`. Declare optional settings with a `nil` default — writing `nil` removes the key.
 
 **5. Lifecycle UI — use what `PASKitLifecycle` ships before writing your own.**
 
@@ -177,7 +193,7 @@ Do not apply `paskitGlass` to nav bars or toolbars — they adopt Liquid Glass a
 
 **6. Styling — SwiftUI defaults + the standard environment.** PASKit views use `.tint`, system fonts, `.primary` / `.secondary`. Apps style at the call site (`.tint(.brand)`, `.font(...)`). PASKit owns no design layer — every app keeps its own theme.
 
-**7. Don't reinvent what PASKit owns.** Before writing a local utility for networking, keychain, reachability, version/build reads, app-icon loading at runtime, rate prompt, what's-new, update check, settings footer, or local notifications (permission, scheduling, tap routing) — check PASKit. If something belongs in PASKit but isn't there yet, extend PASKit rather than ship a parallel local copy.
+**7. Don't reinvent what PASKit owns.** Before writing a local utility for networking, keychain, reachability, version/build reads, app-icon loading at runtime, rate prompt, what's-new, update check, settings footer, a UserDefaults-backed settings store, or local notifications (permission, scheduling, tap routing) — check PASKit. If something belongs in PASKit but isn't there yet, extend PASKit rather than ship a parallel local copy.
 
 ## Purchases — `PASPurchases`, not raw `Purchases`
 

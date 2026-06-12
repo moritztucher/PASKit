@@ -20,7 +20,8 @@ Sources/PASKitCore/
 ├── Credentials/   CredentialVault.swift, KeychainCredentialVault.swift
 ├── Logging/       PASLogger.swift
 ├── Errors/        PASError.swift
-└── Haptics/       PASHaptic.swift, Haptics.swift, View+HapticOnTap.swift
+├── Haptics/       PASHaptic.swift, Haptics.swift, View+HapticOnTap.swift
+└── Settings/      UserDefaultsStorable.swift, PASSettingsStore.swift, PASDefault.swift
 ```
 
 ## Components
@@ -55,6 +56,13 @@ Sources/PASKitCore/
 - `View.hapticOnTap(_:isEnabled:action:)` — SwiftUI sugar that fires the haptic on tap then runs the action.
 
 iOS-only at the hardware level; macOS compiles to a no-op via `#if canImport(UIKit)`.
+
+### Settings — ✅ built
+- `PASSettingsStore` — `@Observable open class` base for an app's UserDefaults-backed settings store. Holds the injected `UserDefaults` (`.standard` default; pass a suite for App Groups/tests) and a single tracked anchor; `removeValue(forKey:)` resets a setting to its declared default.
+- `@PASDefault("key")` — one-line write-through property on a `PASSettingsStore` subclass. The declared initial value is the fallback (kept in the wrapper, not the registration domain). Optionals store `nil` as key absence — declare optional settings with a `nil` default.
+- `UserDefaultsStorable` — round-trip protocol. Conformances: `Bool`, `Int`, `Double`, `String`, `Date`, `Data`, `URL`, `Optional`; `RawRepresentable` enums conform via an empty extension.
+
+Design notes: no macro (keeps swift-syntax out of the dependency graph), so observation granularity is per-store, not per-key — any change invalidates views reading any setting from that store, which is imperceptible at settings-store scale. The subclass needs no `@Observable`/`@ObservationIgnored` of its own and may be `@MainActor`; the base is nonisolated so widget/off-main reads work.
 
 ## Notes
 
