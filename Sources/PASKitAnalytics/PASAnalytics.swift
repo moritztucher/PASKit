@@ -42,7 +42,7 @@ public final class PASAnalytics {
             log.warning("PASAnalytics.setup called twice — ignoring the second call.")
             return
         }
-        let posthog = PostHogConfig(projectToken: config.apiKey, host: config.host)
+        let posthog = PostHogConfig(apiKey: config.apiKey, host: config.host)
         posthog.captureApplicationLifecycleEvents = config.captureApplicationLifecycleEvents
         posthog.captureScreenViews = config.captureScreenViews
         posthog.debug = config.debug
