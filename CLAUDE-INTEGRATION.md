@@ -14,7 +14,7 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 
 | Module | Provides |
 |--------|----------|
-| `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`); haptics (`Haptics.play`, `View.hapticOnTap`); settings (`PASSettingsStore` + `@PASDefault` + `UserDefaultsStorable`); draft persistence (`PASDraft`); styling mechanisms (`Animation.respectingReducedMotion`, `View.pasAnimation`, `Color(light:dark:)`, `Font.pasScaled`, `PASFontRegistration`). |
+| `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`); haptics (`Haptics.play`, `View.hapticOnTap`); settings (`PASSettingsStore` + `@PASDefault` + `UserDefaultsStorable`); draft persistence (`PASDraft`); styling mechanisms (`Animation.respectingReducedMotion`, `View.pasAnimation`, `Color(light:dark:)`, `Font.pasScaled`, `PASFontRegistration`); calendar math + durations (`Date.pas…` helpers, `PASDurationFormat`). |
 | `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `View.paskitGlass(...)` + `View.paskitGlassButtonStyle(...)` (iOS 26 with pre-26 fallback), `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `ChangelogView` (`ChangelogEntry` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS), onboarding engine (`PASOnboardingFlow` + `View.pasOnboardingTransition` + `PASOnboardingProgressBar`), dev-menu scaffold (`View.pasDevelopmentOverlay` + `PASDevelopmentMenu`). |
 | `PASKitPurchases` | RevenueCat facade: `PASPurchases.shared.configure(...)` / `.customerInfo` (observable, stream-fed) / `.isEntitled` / `.offerings` / `.currentOffering` / `.offering(identifier:)` / `.products` / `.purchase(package/product)` → `PASPurchaseResult` / `.restorePurchases` / `.logIn` / `.logOut`. App owns entitlement + product IDs and the paywall UI. |
 | `PASKitAnalytics` | PostHog facade: `PASAnalytics.shared.setup(...)` / `.capture` / `.screen` / `.identify` / `.register` / `.reset` / `.optIn` / `.optOut` / `.flush` / `.isFeatureEnabled` / `.featureFlagPayload`. App owns event vocabulary as an extension on `PASAnalytics`. |
@@ -83,6 +83,18 @@ final class SettingsStore: PASSettingsStore {
 extension WeightUnit: UserDefaultsStorable {}  // any RawRepresentable enum — empty extension
 ```
 Inject via `.environment(settings)`; views read properties and observe automatically (granularity is per-store, which is fine at settings scale — split stores if a hot value churns). App Group sharing and tests inject a suite: `SettingsStore(defaults: UserDefaults(suiteName: "group.…")!)`. Storable out of the box: `Bool`, `Int`, `Double`, `String`, `Date`, `Data`, `URL`, optionals of those, raw-representable enums. Reset one setting with `removeValue(forKey:)`. Declare optional settings with a `nil` default — writing `nil` removes the key.
+
+**4c. Calendar math & durations — `Date.pas…` / `PASDurationFormat`, not hand-rolled.**
+```swift
+import PASKitCore
+date.pasIsSameDay(as: lastOpen)              // day gating
+today.pasDaysSince(challengeStart)           // whole days, startOfDay-normalized both ends
+date.pasStartOfWeek()                        // honors the calendar's firstWeekday
+Date.now.pasHoursUntilMidnight()             // streak-deadline copy
+PASDurationFormat.compact(seconds: 252)      // "4m 12s" — stats labels
+PASDurationFormat.clock(seconds: 3852)       // "1:04:12" — timers
+```
+All take `calendar:` (default `.current`) — inject a fixed calendar in tests. For date *strings* use `formatted(.dateTime…)` / `RelativeDateTimeFormatter` — PASKit deliberately doesn't wrap those.
 
 **5. Lifecycle UI — use what `PASKitLifecycle` ships before writing your own.**
 

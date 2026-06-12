@@ -23,8 +23,9 @@ Sources/PASKitCore/
 ├── Haptics/       PASHaptic.swift, Haptics.swift, View+HapticOnTap.swift
 ├── Settings/      UserDefaultsStorable.swift, PASSettingsStore.swift, PASDefault.swift,
 │                  PASDraft.swift
-└── Styling/       Animation+ReducedMotion.swift, Color+LightDark.swift,
-                   Font+PASScaled.swift, PASFontRegistration.swift
+├── Styling/       Animation+ReducedMotion.swift, Color+LightDark.swift,
+│                  Font+PASScaled.swift, PASFontRegistration.swift
+└── Time/          Date+PASCalendar.swift, PASDurationFormat.swift
 ```
 
 ## Components
@@ -75,6 +76,11 @@ Brand-free styling *mechanisms* — the layer the per-app token systems sit on. 
 - `Color(light:dark:)` — appearance-resolving color without an asset catalog (UIColor/NSColor bridged, cross-platform).
 - `Font.pasScaled(_:relativeTo:weight:design:)` — system font at a custom point size that tracks Dynamic Type via `UIFontMetrics` (fixed-size fallback on macOS).
 - `PASFontRegistration.registerBundledFonts(named:bundle:)` — `CTFontManagerRegisterFontsForURL` loop working around Xcode's `GENERATE_INFOPLIST_FILE` dropping `UIAppFonts`; logs failures via `PASLogger`, never throws.
+
+### Time — ✅ built
+- `Date` extension (`pas`-prefixed, `calendar:` injectable for tests, defaults `.current`): `pasStartOfDay` / `pasEndOfDay`, `pasIsSameDay(as:)`, `pasDaysSince(_:)` (both ends startOfDay-normalized — kills the cross-midnight off-by-one), `pasAdding(days:)`, `pasStartOfWeek()` (honors `firstWeekday`), `pasHoursUntilMidnight()`. The day-gating/streak/rollover building blocks.
+- `PASDurationFormat` — `compact(seconds:)` (`"42s"` / `"4m 12s"` / `"1h 03m"`) and `clock(seconds:)` (`"4:12"` / `"1:04:12"`); `TimeInterval` + `Int` overloads, negatives clamp.
+- Deliberately **not** wrapped: date-to-string formatting (`formatted(.dateTime…)`, `RelativeDateTimeFormatter` already cover it) and 1:1 `Calendar` aliases (`isToday` etc.).
 
 ## Notes
 
