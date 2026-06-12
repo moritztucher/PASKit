@@ -19,6 +19,7 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 | `PASKitPurchases` | RevenueCat facade: `PASPurchases.shared.configure(...)` / `.customerInfo` (observable, stream-fed) / `.isEntitled` / `.offerings` / `.currentOffering` / `.offering(identifier:)` / `.products` / `.purchase(package/product)` → `PASPurchaseResult` / `.restorePurchases` / `.logIn` / `.logOut`. App owns entitlement + product IDs and the paywall UI. |
 | `PASKitAnalytics` | PostHog facade: `PASAnalytics.shared.setup(...)` / `.capture` / `.screen` / `.identify` / `.register` / `.reset` / `.optIn` / `.optOut` / `.flush` / `.isFeatureEnabled` / `.featureFlagPayload`. App owns event vocabulary as an extension on `PASAnalytics`. |
 | `PASKitNotifications` | Local-notification facade: `PASNotifications.shared.configure(...)` / `.authorizationStatus` + `.isAuthorized` (observable) / `.onResponse` (tap routing, cold-start buffered) / `.requestAuthorization` / `.schedule(PASNotificationRequest)` / `.cancel(ids:)` / `.cancelAll` / `.pendingIDs` / `.setBadgeCount`. App owns scheduling policy, copy, identifiers, and navigation. |
+| `PASKitSharing` | Share-card export: `PASShareCard.render` (SwiftUI→`UIImage`), `PASInstagramStories.share`/`.copySticker`, `PASPhotoLibrary.save`, `PASShareItems` + `PASActivitySheet` (sheet + imperative `present`), `PASScaledCardPreview` + `PASTransparencyCheckerboard`. App owns card designs, captions, fallback policy. |
 | `PASKit` (umbrella) | Re-exports every module — one dependency line, `import` modules individually. |
 
 ## Conventions
@@ -294,6 +295,30 @@ try await PASNotifications.shared.schedule(PASNotificationRequest(
 PASNotifications.shared.cancel(ids: ["streak-protection"])
 ```
 Rules: never cache a permission boolean — observe `authorizationStatus` (auto-refreshed on iOS foreground return). Use stable, app-vocabulary notification ids (`"streak-protection"`), not UUIDs — replace-on-reschedule + `cancel(ids:)` depend on them. `userInfo` is `[String: String]` routing keys only, not state. Triggers: `.interval(_:repeats:)`, `.calendar(DateComponents, repeats:)`, `.at(Date)`. Remote push (APNs/FCM/OneSignal) is not in the module — added when the first app adopts server-side push; local scheduling works without `configure`, but foreground presentation and tap routing need it.
+
+## Sharing — `PASKitSharing`, not hand-rolled ImageRenderer/Instagram/Photos plumbing
+
+The app designs the cards (explicit colors — `.accentColor`/`.tint` do **not** resolve inside `ImageRenderer`); PASKit runs the pipeline:
+```swift
+import PASKitSharing
+
+// Render at canonical size — story full-bleed, sticker transparent:
+let story   = PASShareCard.render(StoryCard(stats: stats), size: .init(width: 1080, height: 1920))
+let sticker = PASShareCard.render(StickerCard(stats: stats), size: StickerCard.canonicalSize, opaque: false)
+
+// Instagram Stories — returns false when Instagram can't open; app owns the fallback:
+if await PASInstagramStories.share(background: story) == false {
+    shareItems = PASShareItems([story, "Day 12 done 💪"])
+}
+// .sheet(item: $shareItems) { PASActivitySheet(items: $0.items) }
+
+// Save to Photos (app Info.plist must declare NSPhotoLibraryAddUsageDescription):
+try await PASPhotoLibrary.save(story)
+
+// Sticker-to-clipboard flow — pair with a confirmation alert/toast:
+PASInstagramStories.copySticker(sticker)
+```
+Previews that match the render pixel-for-pixel: `PASScaledCardPreview(cardSize:containerSize:)` (same `cardSize` as the render call); transparent stickers preview over `PASTransparencyCheckerboard` with `clipsToCard: false`. `PASInstagramStories` and `PASActivitySheet.present` are app-only (unavailable in extensions). Add `instagram-stories` to `LSApplicationQueriesSchemes` only if you pre-check availability for showing/hiding an Instagram button.
 
 ## Baseline
 

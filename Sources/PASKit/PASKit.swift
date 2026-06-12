@@ -12,3 +12,4 @@
 @_exported import PASKitAnalytics
 @_exported import PASKitPurchases
 @_exported import PASKitNotifications
+@_exported import PASKitSharing

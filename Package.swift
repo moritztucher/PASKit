@@ -21,6 +21,7 @@ let package = Package(
         .library(name: "PASKitAnalytics", targets: ["PASKitAnalytics"]),
         .library(name: "PASKitPurchases", targets: ["PASKitPurchases"]),
         .library(name: "PASKitNotifications", targets: ["PASKitNotifications"]),
+        .library(name: "PASKitSharing", targets: ["PASKitSharing"]),
     ],
     dependencies: [
         // Foundational
@@ -48,6 +49,7 @@ let package = Package(
                 "PASKitAnalytics",
                 "PASKitPurchases",
                 "PASKitNotifications",
+                "PASKitSharing",
             ]
         ),
         .target(
@@ -69,6 +71,10 @@ let package = Package(
         ),
         .target(
             name: "PASKitNotifications",
+            dependencies: ["PASKitCore"]
+        ),
+        .target(
+            name: "PASKitSharing",
             dependencies: ["PASKitCore"]
         ),
         .target(
