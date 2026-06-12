@@ -29,6 +29,9 @@ let package = Package(
         .package(url: "https://github.com/PostHog/posthog-ios", from: "3.48.3"),
         // Tooling — SimplyDanny/SwiftLintPlugins is the plugin-only distribution
         // of SwiftLint; avoids pulling swift-syntax into the dependency graph.
+        // Deliberately NOT attached to targets as a build-tool plugin: that
+        // would run lint (and require plugin trust) in every consumer's build.
+        // CI lints via the command plugin: `swift package plugin swiftlint`.
         .package(url: "https://github.com/SimplyDanny/SwiftLintPlugins", from: "0.59.0"),
         // DocC — enables `swift package generate-documentation`. No catalog
         // shipped; inline `///` comments drive the docs.
@@ -45,52 +48,34 @@ let package = Package(
                 "PASKitAnalytics",
                 "PASKitPurchases",
                 "PASKitNotifications",
-            ],
-            plugins: [
-                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
             ]
         ),
         .target(
             name: "PASKitCore",
             dependencies: [
                 .product(name: "KeychainAccess", package: "KeychainAccess"),
-            ],
-            plugins: [
-                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
             ]
         ),
         .target(
             name: "PASKitLifecycle",
-            dependencies: ["PASKitCore"],
-            plugins: [
-                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
-            ]
+            dependencies: ["PASKitCore"]
         ),
         .target(
             name: "PASKitAnalytics",
             dependencies: [
                 "PASKitCore",
                 .product(name: "PostHog", package: "posthog-ios"),
-            ],
-            plugins: [
-                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
             ]
         ),
         .target(
             name: "PASKitNotifications",
-            dependencies: ["PASKitCore"],
-            plugins: [
-                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
-            ]
+            dependencies: ["PASKitCore"]
         ),
         .target(
             name: "PASKitPurchases",
             dependencies: [
                 "PASKitCore",
                 .product(name: "RevenueCat", package: "purchases-ios-spm"),
-            ],
-            plugins: [
-                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
             ]
         ),
     ],
