@@ -21,7 +21,8 @@ Sources/PASKitLifecycle/
 ├── WhatsNew/      WhatsNewCard.swift, WhatsNewCardResultBuilder.swift, WhatsNewView.swift
 ├── Changelog/     ChangelogItem.swift, ChangelogEntry.swift, ChangelogView.swift
 ├── Loading/       DefaultLoadingView.swift, View+Loading.swift
-├── LiquidGlass/   PASGlass.swift, PASGlassButtonVariant.swift, View+PaskitGlass.swift
+├── LiquidGlass/   PASGlass.swift, PASGlassButtonVariant.swift, View+PaskitGlass.swift,
+│                  View+PaskitConcentricClip.swift
 ├── Onboarding/    PASOnboardingFlow.swift, PASOnboardingDirection.swift,
 │                  View+PASOnboardingTransition.swift, PASOnboardingProgressBar.swift
 └── Settings/      AppInfoFooter.swift
@@ -60,6 +61,7 @@ Sources/PASKitLifecycle/
 - `View.paskitGlass(_:in:)` (surfaces) and `View.paskitGlassButtonStyle(_:)` (buttons). iOS/macOS 26+ uses Apple's `glassEffect` + `.buttonStyle(.glass)`; earlier OSes fall back to `.regularMaterial` (+ optional tint overlay) / `.borderedProminent` (or `.bordered` for `.clear`).
 - `PASGlass` — chainable: `.regular.tint(...)` colours the material, `.foreground(...)` colours the wrapped content.
 - `PASGlassButtonVariant` — `.regular` / `.clear`.
+- `View.paskitConcentricClip(fallbackRadius:)` — iOS/macOS 26+ clips with `ConcentricRectangle()` (radius auto-derived from the ancestor's `.containerShape` and inset); pre-26 falls back to a `RoundedRectangle` with the supplied radius (typically `containerRadius − inset`).
 - Surfaces only — PASKit deliberately does not wrap `.toolbarBackground` / `.toolbarForegroundStyle`; those are already cross-version and nav bars adopt Liquid Glass automatically on iOS 26.
 
 ### Onboarding — ✅ built

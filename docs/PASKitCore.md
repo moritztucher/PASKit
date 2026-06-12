@@ -21,8 +21,10 @@ Sources/PASKitCore/
 ├── Logging/       PASLogger.swift
 ├── Errors/        PASError.swift
 ├── Haptics/       PASHaptic.swift, Haptics.swift, View+HapticOnTap.swift
-└── Settings/      UserDefaultsStorable.swift, PASSettingsStore.swift, PASDefault.swift,
-                   PASDraft.swift
+├── Settings/      UserDefaultsStorable.swift, PASSettingsStore.swift, PASDefault.swift,
+│                  PASDraft.swift
+└── Styling/       Animation+ReducedMotion.swift, Color+LightDark.swift,
+                   Font+PASScaled.swift, PASFontRegistration.swift
 ```
 
 ## Components
@@ -66,9 +68,17 @@ iOS-only at the hardware level; macOS compiles to a no-op via `#if canImport(UIK
 
 Design notes: no macro (keeps swift-syntax out of the dependency graph), so observation granularity is per-store, not per-key — any change invalidates views reading any setting from that store, which is imperceptible at settings-store scale. The subclass needs no `@Observable`/`@ObservationIgnored` of its own and may be `@MainActor`; the base is nonisolated so widget/off-main reads work.
 
+### Styling — ✅ built
+Brand-free styling *mechanisms* — the layer the per-app token systems sit on. Token values and vocabularies (spacing/radius/color/motion enums) stay per-app.
+- `Animation.respectingReducedMotion(_:)` — `nil` when Reduce Motion is on; for call sites that read the environment themselves.
+- `View.pasAnimation(_:reducedMotion:value:)` — `animation(_:value:)` that honors Reduce Motion itself; substitute defaults to `nil` (snap), pass a short ease for a gentler swap.
+- `Color(light:dark:)` — appearance-resolving color without an asset catalog (UIColor/NSColor bridged, cross-platform).
+- `Font.pasScaled(_:relativeTo:weight:design:)` — system font at a custom point size that tracks Dynamic Type via `UIFontMetrics` (fixed-size fallback on macOS).
+- `PASFontRegistration.registerBundledFonts(named:bundle:)` — `CTFontManagerRegisterFontsForURL` loop working around Xcode's `GENERATE_INFOPLIST_FILE` dropping `UIAppFonts`; logs failures via `PASLogger`, never throws.
+
 ## Notes
 
-- Design tokens stay per-app. PASKit has no design module — apps use SwiftUI defaults and their own per-app theme.
+- Design tokens stay per-app. PASKit has no design module — apps use SwiftUI defaults and their own per-app theme. Brand-free styling *mechanisms* (accessibility-aware animation, color/font plumbing) are the exception and live in `Styling/`.
 
 ## Remaining
 
