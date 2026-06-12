@@ -21,7 +21,8 @@ Sources/PASKitCore/
 ├── Logging/       PASLogger.swift
 ├── Errors/        PASError.swift
 ├── Haptics/       PASHaptic.swift, Haptics.swift, View+HapticOnTap.swift
-└── Settings/      UserDefaultsStorable.swift, PASSettingsStore.swift, PASDefault.swift
+└── Settings/      UserDefaultsStorable.swift, PASSettingsStore.swift, PASDefault.swift,
+                   PASDraft.swift
 ```
 
 ## Components
@@ -61,6 +62,7 @@ iOS-only at the hardware level; macOS compiles to a no-op via `#if canImport(UIK
 - `PASSettingsStore` — `@Observable open class` base for an app's UserDefaults-backed settings store. Holds the injected `UserDefaults` (`.standard` default; pass a suite for App Groups/tests) and a single tracked anchor; `removeValue(forKey:)` resets a setting to its declared default.
 - `@PASDefault("key")` — one-line write-through property on a `PASSettingsStore` subclass. The declared initial value is the fallback (kept in the wrapper, not the registration domain). Optionals store `nil` as key absence — declare optional settings with a `nil` default.
 - `UserDefaultsStorable` — round-trip protocol. Conformances: `Bool`, `Int`, `Double`, `String`, `Date`, `Data`, `URL`, `Optional`; `RawRepresentable` enums conform via an empty extension.
+- `PASDraft<Value: Codable>` — one JSON-encoded in-progress value under a UserDefaults key (`save` / `load` / `clear`), best-effort. The "resume after kill" box for onboarding/forms — pairs with `PASOnboardingFlow` in PASKitLifecycle.
 
 Design notes: no macro (keeps swift-syntax out of the dependency graph), so observation granularity is per-store, not per-key — any change invalidates views reading any setting from that store, which is imperceptible at settings-store scale. The subclass needs no `@Observable`/`@ObservationIgnored` of its own and may be `@MainActor`; the base is nonisolated so widget/off-main reads work.
 
