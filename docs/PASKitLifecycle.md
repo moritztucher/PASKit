@@ -1,6 +1,6 @@
 # PASKitLifecycle
 
-**Status:** Built — twelve components.
+**Status:** Built — thirteen components.
 **Dependencies:** `PASKitCore`. StoreKit, SwiftUI, MessageUI (iOS), UIKit (iOS).
 **Platforms:** iOS 18+, macOS 15+. The mail composer and the runtime app-icon loader are iOS-only (`#if canImport(MessageUI)` / `#if canImport(UIKit)`); the rest works on both.
 
@@ -25,6 +25,7 @@ Sources/PASKitLifecycle/
 │                  View+PaskitConcentricClip.swift
 ├── Onboarding/    PASOnboardingFlow.swift, PASOnboardingDirection.swift,
 │                  View+PASOnboardingTransition.swift, PASOnboardingProgressBar.swift
+├── Development/   View+PASDevelopmentOverlay.swift, PASDevelopmentMenu.swift
 └── Settings/      AppInfoFooter.swift
 ```
 
@@ -71,6 +72,11 @@ Sources/PASKitLifecycle/
 - `PASOnboardingProgressBar` — slim capsule bar, track `.quaternary` / fill `.tint`, animated, accessibility value as percentage.
 - Resume-after-kill pairs with `PASDraft` (PASKitCore): snapshot answers + current step on change/scene-phase, at launch hydrate answers **first**, then `flow.go(to: restoredStep)`.
 - Extracted from three production implementations (66-day-challenge app, workout app, habit app); the conditional-steps + draft-resume design follows the workout app's, the most evolved of the three.
+
+### Development — ✅ built
+- `View.pasDevelopmentOverlay(alignment:menu:)` — floating "DEV" capsule (hammer + monospaced label, white on `.tint`, `accessibilityIdentifier("PAS_DEV_OVERLAY")`) presenting the app's dev menu as a sheet. **Compile-time DEBUG-gated**: in release the modifier body is `self` — the symbol stays available so call sites build in every configuration; the menu closure is never invoked in release but must compile (gate DEBUG-only menu types *inside* the closure, or gate the call site). TestFlight builds are release config, so testers never see it; a runtime escape hatch gets added only if dev tooling in TestFlight becomes a real need.
+- `PASDevelopmentMenu(title:content:)` — menu container chrome: `NavigationStack` + `Form` + inline title + Done. Sections are the app's vocabulary (state toggles, demo seeds, reset buttons, mock-screen links) as plain `Form` content.
+- Extracted from four apps' independent dev tooling (floating-overlay, dedicated screen, and settings-section variants); the shell is shared, every menu's contents stay per-app.
 
 ### Settings — ✅ built
 - `AppInfoFooter` (iOS-only) — Settings-screen footer with app icon (via `CFBundleIcons` → `CFBundlePrimaryIcon` → `CFBundleIconFiles`) + display name + version.
