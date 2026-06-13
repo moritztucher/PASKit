@@ -4,9 +4,11 @@ Thin facade over the RevenueCat SDK. PASKit owns the mechanism (`configure`, cus
 
 ## API
 
-- `PASPurchases` — `@MainActor @Observable` singleton (`PASPurchases.shared`). Observable `customerInfo` kept live via RevenueCat's customer-info stream; `isEntitled(_:)` accepts a raw `String` or any `String`-backed enum.
+- `PASPurchases` — `@MainActor @Observable` singleton (`PASPurchases.shared`). Observable `customerInfo` kept live via RevenueCat's customer-info stream; `isEntitled(_:)` accepts a raw `String` or any `String`-backed enum. `offering(firstOf:)` is the "campaign offering, else default" fallback chain.
 - `PASPurchasesConfig` — config struct passed to `configure` (`apiKey` (public SDK key), `appUserID`, `debugLogs`).
 - `PASPurchaseResult` — named result of `purchase` (`customerInfo`, `transaction`, `userCancelled`).
+- `PASPaywallFlow` — `@Observable` purchase/restore state machine for app-owned paywall UI: `isPurchasing`, `errorMessage` + alert-friendly `isShowingError` binding, user-cancel swallowed silently, `nil`-package → unreachable message, clean-but-unentitled restore → "no purchase found". Writes no app state — gate on `customerInfo`.
+- `StoreProduct.pasSavingsPercent(comparedToMonthly:)` / `PASPricingMath.savingsPercent` — honest savings-% against the **live** monthly price (never a "save 0%" badge). `Package.pasHasFreeTrial` / `StoreProduct.pasHasFreeTrial` — intro-offer-is-a-trial, for CTA copy.
 
 ## Example
 
