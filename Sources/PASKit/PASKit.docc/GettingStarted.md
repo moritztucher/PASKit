@@ -4,7 +4,7 @@ Add PASKit to your iOS project and make your first call in under five minutes.
 
 ## Overview
 
-PASKit is one Swift Package with three modules: `PASKitCore`, `PASKitLifecycle`, and `PASKitAnalytics`. Depend on the umbrella ``PASKit`` product to get everything, or pull individual modules to keep the binary lean and the dependency graph minimal.
+PASKit is one Swift Package with six modules: `PASKitCore`, `PASKitLifecycle`, `PASKitAnalytics`, `PASKitPurchases`, `PASKitNotifications`, and `PASKitSharing`. Depend on the umbrella ``PASKit`` product to get everything, or pull individual modules to keep the binary lean and the dependency graph minimal — an app that takes no payment never links RevenueCat.
 
 ## Add the package
 
@@ -32,6 +32,9 @@ Then choose the umbrella or individual modules:
 .product(name: "PASKitCore", package: "PASKit"),
 .product(name: "PASKitLifecycle", package: "PASKit"),
 .product(name: "PASKitAnalytics", package: "PASKit"),
+.product(name: "PASKitPurchases", package: "PASKit"),
+.product(name: "PASKitNotifications", package: "PASKit"),
+.product(name: "PASKitSharing", package: "PASKit"),
 ```
 
 ## First call
