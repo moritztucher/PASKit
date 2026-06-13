@@ -1,6 +1,6 @@
 # PASKitNotifications
 
-> **Status: Shipped (v0.2.0-dev).** Built when XueTang V2 became the first consuming app to need local notifications (streak-protection reminders, per its D-16/D-17 decisions).
+> **Status: Shipped.** Built when XueTang V2 became the first consuming app to need local notifications (streak-protection reminders, per its D-16/D-17 decisions).
 
 **Dependencies:** `PASKitCore` only. `UserNotifications` is a system framework — no third-party SDK. iOS + macOS (the automatic foreground authorization refresh is iOS-only; macOS callers refresh manually).
 
