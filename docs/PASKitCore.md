@@ -25,7 +25,8 @@ Sources/PASKitCore/
 ├── Settings/      UserDefaultsStorable.swift, PASSettingsStore.swift, PASDefault.swift,
 │                  PASDraft.swift
 ├── Styling/       Animation+ReducedMotion.swift, Color+LightDark.swift,
-│                  Font+PASScaled.swift, PASFontRegistration.swift
+│                  Font+PASScaled.swift, PASFontRegistration.swift,
+│                  PASPressableButtonStyle.swift
 ├── Time/          Date+PASCalendar.swift, PASDurationFormat.swift
 ├── Streak/        PASStreakState.swift, PASStreakEngine.swift
 └── Storage/       PASAppGroupContainer.swift
@@ -80,6 +81,7 @@ Brand-free styling *mechanisms* — the layer the per-app token systems sit on. 
 - `Color(light:dark:)` — appearance-resolving color without an asset catalog (UIColor/NSColor bridged, cross-platform).
 - `Font.pasScaled(_:relativeTo:weight:design:)` — system font at a custom point size that tracks Dynamic Type via `UIFontMetrics` (fixed-size fallback on macOS).
 - `PASFontRegistration.registerBundledFonts(named:bundle:)` — `CTFontManagerRegisterFontsForURL` loop working around Xcode's `GENERATE_INFOPLIST_FILE` dropping `UIAppFonts`; logs failures via `PASLogger`, never throws.
+- `PASPressableButtonStyle` + `.buttonStyle(.pasPressable(…))` — the press-scale interaction (scale on press + spring, optional `PASHaptic` on the press-down edge) under apps' styled buttons. Brand-free — fills/fonts/radii stay per-app. Extracted from two apps' scale-button styles.
 
 ### Time — ✅ built
 - `Date` extension (`pas`-prefixed, `calendar:` injectable for tests, defaults `.current`): `pasStartOfDay` / `pasEndOfDay`, `pasIsSameDay(as:)`, `pasDaysSince(_:)` (both ends startOfDay-normalized — kills the cross-midnight off-by-one), `pasAdding(days:)`, `pasStartOfWeek()` (honors `firstWeekday`), `pasHoursUntilMidnight()`. The day-gating/streak/rollover building blocks.

@@ -1,6 +1,6 @@
 # PASKitLifecycle
 
-**Status:** Built — fourteen components.
+**Status:** Built — fifteen components.
 **Dependencies:** `PASKitCore`. StoreKit, SwiftUI, MessageUI (iOS), UIKit (iOS).
 **Platforms:** iOS 18+, macOS 15+. The mail composer and the runtime app-icon loader are iOS-only (`#if canImport(MessageUI)` / `#if canImport(UIKit)`); the rest works on both.
 
@@ -27,6 +27,7 @@ Sources/PASKitLifecycle/
 │                  View+PASOnboardingTransition.swift, PASOnboardingProgressBar.swift
 ├── Development/   View+PASDevelopmentOverlay.swift, PASDevelopmentMenu.swift
 ├── Toast/         View+PASToast.swift, PASToast.swift
+├── Indicators/    PASProgressRing.swift
 └── Settings/      AppInfoFooter.swift
 ```
 
@@ -83,6 +84,9 @@ Sources/PASKitLifecycle/
 - `View.pasToast(isPresented:duration:alignment:content:)` and `View.pasToast(item:duration:alignment:content:)` — toast lifecycle: overlay placement (default `.bottom`), slide+fade transition (fade-only under Reduce Motion), spring animation, auto-dismiss after `duration` (default 4s; `nil` = sticky). Dismiss runs on `.task(id:)` so structured cancellation re-arms the timer correctly — a new `item` restarts it (the stale-timer bug a bare `Task.sleep` causes can't happen). Use `item:` whenever consecutive triggers change content.
 - `PASToast` — default content row: optional SF symbol + tint, message, optional trailing action ("Undo"); `.ultraThickMaterial` with a Reduce Transparency solid fallback, 16pt rounded, soft shadow. Apps with a locked design language pass their own view and share only the lifecycle.
 - Extracted from three apps' hand-rolled toasts (undo snackbar, saved-to-Photos capsule, set-logged row).
+
+### Indicators — ✅ built
+- `PASProgressRing` — circular progress indicator, the circular sibling of `PASOnboardingProgressBar`. Track defaults to a faint adaptive grey (override via `trackColor`), fill is `.tint`, optional `@ViewBuilder` center label, `size`/`lineWidth` params, progress clamped 0…1, `-90°` start + `.round` cap, percentage a11y, spring-animates on progress change. Extracted from four apps' rings (the only divergence was color — handled by `.tint` + the track param).
 
 ### Settings — ✅ built
 - `AppInfoFooter` (iOS-only) — Settings-screen footer with app icon (via `CFBundleIcons` → `CFBundlePrimaryIcon` → `CFBundleIconFiles`) + display name + version.
