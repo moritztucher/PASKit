@@ -27,7 +27,8 @@ Sources/PASKitCore/
 ├── Styling/       Animation+ReducedMotion.swift, Color+LightDark.swift,
 │                  Font+PASScaled.swift, PASFontRegistration.swift
 ├── Time/          Date+PASCalendar.swift, PASDurationFormat.swift
-└── Streak/        PASStreakState.swift, PASStreakEngine.swift
+├── Streak/        PASStreakState.swift, PASStreakEngine.swift
+└── Storage/       PASAppGroupContainer.swift
 ```
 
 ## Components
@@ -94,6 +95,10 @@ Brand-free styling *mechanisms* — the layer the per-app token systems sit on. 
 - **Caller rule:** run `rolledOver` at launch **and on every `scenePhase == .active`** — iOS keeps apps resident for days; launch-only rollover leaves streaks stale.
 - Milestone thresholds/tables (7/21/66, icons, copy) are app vocabulary — not extracted.
 - Extracted from a shipped learning app's engine; assertion-verified for the freeze ordering rules above.
+
+### Storage — ✅ built
+- `PASAppGroupContainer(identifier:)` — resolves a shared App Group container (`throws PASAppGroupError.containerUnavailable` when the entitlement is missing); `url(for:)` builds store-file URLs in it; `migrateStore(from:to:sidecarExtensions:)` one-time-copies an existing store + its sidecar files/directories from the app's default location into the container so a widget/extension can read it (idempotent — only when source exists and destination doesn't; failed sidecar copies log and continue, a failed main copy throws).
+- **Store-engine agnostic by design** — serves Realm (`["realm.lock", "realm.note", "realm.management"]`), SQLite/SwiftData (`["sqlite-wal", "sqlite-shm"]`), or a JSON cache equally. **PASKit takes no `realm-swift` (or any persistence) dependency** — the store's `Configuration`/schema/migration and save wrappers stay per-app. (Studio direction: apps are moving Realm → SwiftData, so blessing a vendor here would be backwards.)
 
 ## Notes
 
