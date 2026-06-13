@@ -72,10 +72,10 @@ private struct PASKitGlassModifier<S: Shape>: ViewModifier {
 
     @available(iOS 26.0, macOS 26.0, *)
     private var appleGlass: Glass {
-        var g = Glass.regular
+        var style = Glass.regular
         if let bg = glass.backgroundTint {
-            g = g.tint(bg)
+            style = style.tint(bg)
         }
-        return g
+        return style
     }
 }

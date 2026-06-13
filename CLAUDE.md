@@ -29,7 +29,9 @@ Each module has a spec doc in `docs/` — the source of truth for what that modu
 | `PASKitCore` | [docs/PASKitCore.md](docs/PASKitCore.md) | Foundational utilities — networking, logging, reachability, credentials, app metadata. |
 | `PASKitLifecycle` | [docs/PASKitLifecycle.md](docs/PASKitLifecycle.md) | App-lifecycle UI — rate prompt, update check, what's-new, feedback, app-info footer. |
 | `PASKitAnalytics` | [docs/PASKitAnalytics.md](docs/PASKitAnalytics.md) | PostHog facade — generic capture surface. |
-| `PASKitPurchases` | [docs/PASKitPurchases.md](docs/PASKitPurchases.md) | **Planned (v0.2.0)** — not in v0.1.0. RevenueCat wrapper — entitlements, gating, hosted paywall. |
+| `PASKitPurchases` | [docs/PASKitPurchases.md](docs/PASKitPurchases.md) | RevenueCat facade — entitlement state, offerings/products, purchase + restore flow, identity. Apps own paywall UI + product/entitlement IDs. |
+| `PASKitNotifications` | [docs/PASKitNotifications.md](docs/PASKitNotifications.md) | UNUserNotificationCenter facade — delegate plumbing, observable authorization, schedule/cancel primitives, tap routing. Apps own scheduling policy, copy, and navigation. |
+| `PASKitSharing` | [docs/PASKitSharing.md](docs/PASKitSharing.md) | Share-card export — SwiftUI→image rendering, Instagram Stories hand-off, save-to-Photos, activity sheet, preview helpers. Apps own card designs, captions, and fallback policy. |
 
 ## Keeping Docs Current (mandatory)
 

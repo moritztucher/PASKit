@@ -19,9 +19,9 @@ let package = Package(
         .library(name: "PASKitCore", targets: ["PASKitCore"]),
         .library(name: "PASKitLifecycle", targets: ["PASKitLifecycle"]),
         .library(name: "PASKitAnalytics", targets: ["PASKitAnalytics"]),
-        // PASKitPurchases is planned for v0.2.0 — kept here as the reference
-        // for where the RevenueCat-backed product will be re-added.
-        // .library(name: "PASKitPurchases", targets: ["PASKitPurchases"]),
+        .library(name: "PASKitPurchases", targets: ["PASKitPurchases"]),
+        .library(name: "PASKitNotifications", targets: ["PASKitNotifications"]),
+        .library(name: "PASKitSharing", targets: ["PASKitSharing"]),
     ],
     dependencies: [
         // Foundational
@@ -30,12 +30,15 @@ let package = Package(
         .package(url: "https://github.com/PostHog/posthog-ios", from: "3.48.3"),
         // Tooling — SimplyDanny/SwiftLintPlugins is the plugin-only distribution
         // of SwiftLint; avoids pulling swift-syntax into the dependency graph.
+        // Deliberately NOT attached to targets as a build-tool plugin: that
+        // would run lint (and require plugin trust) in every consumer's build.
+        // Lint locally via the command plugin: `swift package plugin swiftlint`.
         .package(url: "https://github.com/SimplyDanny/SwiftLintPlugins", from: "0.59.0"),
         // DocC — enables `swift package generate-documentation`. No catalog
         // shipped; inline `///` comments drive the docs.
         .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.4.0"),
-        // RevenueCat dependency re-added in v0.2.0 when PASKitPurchases lands.
-        // .package(url: "https://github.com/RevenueCat/purchases-ios-spm.git", from: "5.67.0"),
+        // RevenueCat — committed vendor for PASKitPurchases.
+        .package(url: "https://github.com/RevenueCat/purchases-ios-spm.git", from: "5.67.0"),
     ],
     targets: [
         .target(
@@ -44,48 +47,43 @@ let package = Package(
                 "PASKitCore",
                 "PASKitLifecycle",
                 "PASKitAnalytics",
-            ],
-            plugins: [
-                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
+                "PASKitPurchases",
+                "PASKitNotifications",
+                "PASKitSharing",
             ]
         ),
         .target(
             name: "PASKitCore",
             dependencies: [
                 .product(name: "KeychainAccess", package: "KeychainAccess"),
-            ],
-            plugins: [
-                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
             ]
         ),
         .target(
             name: "PASKitLifecycle",
-            dependencies: ["PASKitCore"],
-            plugins: [
-                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
-            ]
+            dependencies: ["PASKitCore"]
         ),
         .target(
             name: "PASKitAnalytics",
             dependencies: [
                 "PASKitCore",
                 .product(name: "PostHog", package: "posthog-ios"),
-            ],
-            plugins: [
-                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
             ]
         ),
-        // PASKitPurchases target — planned for v0.2.0. When it lands, restore:
-        // .target(
-        //     name: "PASKitPurchases",
-        //     dependencies: [
-        //         "PASKitCore",
-        //         .product(name: "RevenueCat", package: "purchases-ios-spm"),
-        //     ],
-        //     plugins: [
-        //         .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins"),
-        //     ]
-        // ),
+        .target(
+            name: "PASKitNotifications",
+            dependencies: ["PASKitCore"]
+        ),
+        .target(
+            name: "PASKitSharing",
+            dependencies: ["PASKitCore"]
+        ),
+        .target(
+            name: "PASKitPurchases",
+            dependencies: [
+                "PASKitCore",
+                .product(name: "RevenueCat", package: "purchases-ios-spm"),
+            ]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )

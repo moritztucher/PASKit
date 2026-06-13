@@ -13,22 +13,39 @@ public struct FeedbackSheet: View {
 
     public let title: String
     public let subtitle: String
-    public let heroSymbol: String
+    public let heroSymbol: String?
     public let categories: [String]
+    public let showsCloseButton: Bool
     public let onSubmit: @Sendable (FeedbackPayload) async throws -> Void
 
+    /// - Parameters:
+    ///   - heroSymbol: SF Symbol above the title. `nil` hides the symbol
+    ///     (title and subtitle remain).
+    ///   - initialName: Prefill for the name field — pass the known user
+    ///     name so returning users don't retype it.
+    ///   - initialEmail: Prefill for the email field — pass the account
+    ///     email when the user is signed in.
+    ///   - showsCloseButton: Adds an ⓧ dismiss button top-trailing and
+    ///     drops the redundant Cancel button on compact layouts. Off by
+    ///     default (macOS windows have their own close affordance).
     public init(
         title: String = "We'd Love Your Feedback",
         subtitle: String = "Help us improve by sharing your thoughts, reporting bugs, or requesting new features.",
-        heroSymbol: String = "lifepreserver",
+        heroSymbol: String? = "lifepreserver",
         categories: [String] = ["General", "Feature Request", "Bug Report"],
+        initialName: String = "",
+        initialEmail: String = "",
+        showsCloseButton: Bool = false,
         onSubmit: @escaping @Sendable (FeedbackPayload) async throws -> Void
     ) {
         self.title = title
         self.subtitle = subtitle
         self.heroSymbol = heroSymbol
         self.categories = categories
+        self.showsCloseButton = showsCloseButton
         self.onSubmit = onSubmit
+        _name = State(initialValue: initialName)
+        _email = State(initialValue: initialEmail)
     }
 
     @Environment(\.dismiss) private var dismiss
@@ -67,6 +84,11 @@ public struct FeedbackSheet: View {
                 }
             }
         }
+        .overlay(alignment: .topTrailing) {
+            if showsCloseButton {
+                closeButton
+            }
+        }
         .onAppear {
             if selectedCategory.isEmpty {
                 selectedCategory = categories.first ?? ""
@@ -89,12 +111,14 @@ public struct FeedbackSheet: View {
     @ViewBuilder
     private var hero: some View {
         VStack(spacing: 16) {
-            Image(systemName: heroSymbol)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 96, height: 96)
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.tint)
+            if let heroSymbol {
+                Image(systemName: heroSymbol)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 96, height: 96)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.tint)
+            }
             Text(title)
                 .font(.title2.bold())
                 .multilineTextAlignment(.center)
@@ -103,6 +127,20 @@ public struct FeedbackSheet: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
+        .padding()
+    }
+
+    private var closeButton: some View {
+        Button {
+            dismiss()
+        } label: {
+            Image(systemName: "xmark.circle.fill")
+                .font(.title2)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Close")
         .padding()
     }
 
@@ -153,24 +191,43 @@ public struct FeedbackSheet: View {
                 }
             }
 
-            HStack {
-                Button("Cancel", role: .cancel) { dismiss() }
-                Spacer()
-                Button {
-                    Task { await submit() }
-                } label: {
-                    if isSubmitting {
-                        ProgressView()
-                    } else {
-                        Text("Send")
+            if isWide {
+                HStack {
+                    Button("Cancel", role: .cancel) { dismiss() }
+                    Spacer()
+                    submitButton
+                }
+            } else {
+                VStack(spacing: 12) {
+                    submitButton
+                        .controlSize(.large)
+                        .frame(maxWidth: .infinity)
+                    if !showsCloseButton {
+                        Button("Cancel", role: .cancel) { dismiss() }
+                            .frame(maxWidth: .infinity)
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(!canSubmit)
-                .keyboardShortcut(.defaultAction)
             }
         }
         .padding()
+    }
+
+    private var submitButton: some View {
+        Button {
+            Task { await submit() }
+        } label: {
+            Group {
+                if isSubmitting {
+                    ProgressView()
+                } else {
+                    Text("Send")
+                }
+            }
+            .frame(maxWidth: isWide ? nil : .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(!canSubmit)
+        .keyboardShortcut(.defaultAction)
     }
 
     private var canSubmit: Bool {

@@ -18,6 +18,12 @@ public protocol NetworkService: Sendable {
         as: T.Type,
         decoder: JSONDecoder
     ) async throws -> T
+
+    /// Send a request, validate the status code, and discard the response
+    /// body — for fire-and-forget endpoints (webhooks, pings) that return
+    /// 204 or a body the caller doesn't need. Same error behaviour as the
+    /// decoding variant, minus `decodingFailed`.
+    func send(_ request: URLRequest) async throws
 }
 
 public extension NetworkService {
