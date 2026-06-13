@@ -4,7 +4,7 @@
 //
 //  Declarative "what's new in this version" sheet, with a staggered blur-slide
 //  entrance. Cards declared via `@WhatsNewCardResultBuilder`. Strings and
-//  symbols are caller-supplied — no XueTang content baked in.
+//  symbols are caller-supplied — no app content is baked in.
 //
 
 import SwiftUI
