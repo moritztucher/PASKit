@@ -4,10 +4,11 @@ Thin facade over `UNUserNotificationCenter`. PASKit owns the mechanism (delegate
 
 ## API
 
-- `PASNotifications` — `@MainActor @Observable` singleton (`PASNotifications.shared`). Observable `authorizationStatus` (+ `isAuthorized`), `configure` installs the notification-center delegate, `onResponse` registers the tap router, `requestAuthorization` / `schedule` / `cancel` / `cancelAll` / `pendingIDs` / `setBadgeCount`.
+- `PASNotifications` — `@MainActor @Observable` singleton (`PASNotifications.shared`). Observable `authorizationStatus` (+ `isAuthorized`), `configure` installs the notification-center delegate, `onResponse` registers the tap router, `requestAuthorization` / `schedule` / `fireTest` / `cancel` / `cancelAll` / `pendingIDs` / `setBadgeCount`.
 - `PASNotificationsConfig` — config struct passed to `configure` (`foregroundPresentation` options; default `[.banner, .sound]`).
 - `PASNotificationRequest` — Sendable description of a local notification (`id`, `title`, `body`, `subtitle`, `sound`, `badge`, `userInfo` routing payload, `trigger`).
-- `PASNotificationTrigger` — `.interval(_:repeats:)`, `.calendar(_:repeats:)`, `.at(Date)`.
+- `PASNotificationTrigger` — `.interval(_:repeats:)`, `.calendar(_:repeats:)`, `.at(Date)` one-shot sugar, `.dailyAt(hour:minute:)` / `.dailyAt(_ date:)` daily-reminder sugar (repeating calendar at a wall-clock time; the `Date` overload extracts hour/minute from the user's picked time).
+- `fireTest(_:after:)` — fire a notification's content now (≥1s) under a `test.<id>` identifier so it never replaces the real pending instance — the DEBUG dev-menu "test this notification" button.
 - `PASNotificationResponse` — what `onResponse` receives (`notificationID`, `actionID`, `userInfo`, `isDefaultTap`).
 
 ## Example

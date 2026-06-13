@@ -42,6 +42,25 @@ The `docs/*.md` specs are the source of truth for each module. They must never d
 - A code change that contradicts a module's spec is **not done** until the spec is reconciled — fix the code or update the doc, never leave them disagreeing.
 - An out-of-date spec is worse than no spec: it misleads the next session. Treat doc drift as a bug.
 
+### Doc surfaces that must always be current
+
+These are not optional and not "later" — they ship in the **same commit** as the change that affects them. A PR that adds code but leaves any of these stale is incomplete.
+
+| Surface | Keep current when… |
+|---------|---------------------|
+| `docs/<Module>.md` | a module's scope, API, or status changes |
+| Root `README.md` — modules table + intro | a module is added/removed, or its purpose shifts |
+| `Sources/PASKit/PASKit.docc/PASKit.md` (DocC landing, **published publicly**) | a module is added/removed, or its headline API changes |
+| `CLAUDE.md` module table (above) | a module is added/removed |
+| `CLAUDE-INTEGRATION.md` | any public surface, convention, or module changes (it is the contract apps depend on) |
+| Per-folder `Sources/**/README.md` | a topic folder gains/loses public API |
+| Per-module `Sources/<FlatModule>/README.md` | a flat module (Analytics, Notifications, Purchases, Sharing) gains/loses public API |
+
+**Structural rules:**
+- **Every topic folder under `Sources/` has a `README.md`.** Create a new folder → add its `README.md` in the same commit (Title / one-line / `## API` / `## Example`, matching the existing folder READMEs).
+- **Every flat module has a root `README.md`.** Add a new module → add `Sources/<Module>/README.md` **and** a root-README table row **and** a DocC-landing modules entry, same commit.
+- **Never mark a shipped module "planned."** Status in the root README and DocC landing reflects what's actually in `Sources/`.
+
 ## Build Philosophy
 
 PASKit is grown deliberately, not scaffolded upfront.
