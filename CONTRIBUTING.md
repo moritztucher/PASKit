@@ -29,12 +29,12 @@ refactor: bucket sources by topic, one public type per file
 
 ```bash
 swift build
-swift test   # runs once a Tests/ target exists
+swift test
 ```
 
 - Swift 6 toolchain, iOS 18+ / macOS 15+.
 - SwiftLint runs as a build-tool plugin — keep the build warning-clean.
-- CI builds on macOS and across the per-module iOS simulator schemes; it runs `swift test` only when a `Tests/` directory is present (there isn't one yet — see the open item in `docs/PASKitCore.md`). Make sure `swift build` passes locally before opening a PR, and add tests under `Tests/` alongside behaviour changes where you can.
+- CI builds on macOS and across the per-module iOS simulator schemes, and runs `swift test`. `PASKitCoreTests` (Swift Testing) covers PASKitCore's pure logic; make sure both `swift build` and `swift test` pass locally before opening a PR, and add tests alongside behaviour changes where you can.
 
 ## Pull requests
 

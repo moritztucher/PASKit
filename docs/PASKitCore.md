@@ -106,6 +106,10 @@ Brand-free styling *mechanisms* — the layer the per-app token systems sit on. 
 
 - Design tokens stay per-app. PASKit has no design module — apps use SwiftUI defaults and their own per-app theme. Brand-free styling *mechanisms* (accessibility-aware animation, color/font plumbing) are the exception and live in `Styling/`.
 
+## Tests
+
+`Tests/PASKitCoreTests/` (Swift Testing) covers the pure, deterministic logic — `PASStreakEngine` freeze-ordering rules, `Date+PASCalendar` day/week math, `PASDurationFormat`, `URLRequest.cURL`, `@PASDefault`/`PASSettingsStore`/`PASDraft` round-trips, and `PASError`. A fixed UTC calendar (`TestSupport.swift`) keeps day/week assertions stable across CI timezones. Foundation-only, so they run on the macOS host via `swift test`.
+
 ## Remaining
 
-- [ ] Unit tests.
+- [ ] Tests for the UIKit-gated members (haptics, font registration) — need a host with UIKit.

@@ -84,6 +84,14 @@ let package = Package(
                 .product(name: "RevenueCat", package: "purchases-ios-spm"),
             ]
         ),
+        // Tests cover PASKitCore's pure, deterministic logic — streak engine,
+        // calendar math, duration formatting, cURL rendering, settings
+        // round-trips, error domain. All Foundation-only, so they run on the
+        // macOS CI host without a simulator.
+        .testTarget(
+            name: "PASKitCoreTests",
+            dependencies: ["PASKitCore"]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )
