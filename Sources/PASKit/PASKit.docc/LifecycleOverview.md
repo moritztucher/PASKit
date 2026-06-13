@@ -86,16 +86,16 @@ ContentView().loading(isPresented: $isLoading) {
 Surfaces only — cards, sheet content, custom backgrounds. iOS 26 uses Apple's `glassEffect`; earlier OSes fall back to `.regularMaterial` with an optional tint overlay:
 
 ```swift
-Card(...).paskitGlass(in: .rect(cornerRadius: 16))
-Card(...).paskitGlass(.regular.tint(.orange), in: .rect(cornerRadius: 16))
-Card(...).paskitGlass(.regular.foreground(.white), in: .capsule)
+Card(...).pasGlass(in: .rect(cornerRadius: 16))
+Card(...).pasGlass(.regular.tint(.orange), in: .rect(cornerRadius: 16))
+Card(...).pasGlass(.regular.foreground(.white), in: .capsule)
 ```
 
 For buttons that should adopt Liquid Glass with a pre-26 fallback:
 
 ```swift
-Button("Continue") { ... }.paskitGlassButtonStyle()
-Button("Dismiss") { ... }.paskitGlassButtonStyle(.clear)
+Button("Continue") { ... }.pasGlassButtonStyle()
+Button("Dismiss") { ... }.pasGlassButtonStyle(.clear)
 ```
 
 Do not apply `PASGlass` to nav bars or toolbars — they adopt Liquid Glass automatically on iOS 26, and `.toolbarBackground(_:for:)` is already cross-version.
