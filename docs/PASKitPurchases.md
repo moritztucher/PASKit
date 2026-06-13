@@ -1,6 +1,6 @@
 # PASKitPurchases
 
-> **Status: Shipped (v0.2.0-dev).** Built when XueTang V2 became the first consuming app to take payment (premium subscription + consumable coin packs).
+> **Status: Shipped.** Built when XueTang V2 became the first consuming app to take payment (premium subscription + consumable coin packs).
 
 **Dependencies:** `RevenueCat` SDK (`purchases-ios-spm`, from 5.67.0) + `PASKitCore`. `RevenueCatUI` is **not** linked — it joins the module if/when an app wants the hosted paywall (see below).
 

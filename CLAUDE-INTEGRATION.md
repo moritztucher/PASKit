@@ -438,7 +438,7 @@ Previews that match the render pixel-for-pixel: `PASScaledCardPreview(cardSize:c
 
 ## Baseline
 
-iOS 18+, macOS 15+, swift-tools 6.3, Swift 6 language mode. SwiftLint via `SimplyDanny/SwiftLintPlugins` — one shared `.swiftlint.yml` in the repo root.
+iOS 18+, macOS 15+, swift-tools 6.2, Swift 6 language mode. SwiftLint via `SimplyDanny/SwiftLintPlugins` — one shared `.swiftlint.yml` in the repo root.
 
 ## Build philosophy
 

@@ -1,6 +1,6 @@
 # PASKitLifecycle
 
-**Status:** Built — fifteen components.
+**Status:** Built — twelve components.
 **Dependencies:** `PASKitCore`. StoreKit, SwiftUI, MessageUI (iOS), UIKit (iOS).
 **Platforms:** iOS 18+, macOS 15+. The mail composer and the runtime app-icon loader are iOS-only (`#if canImport(MessageUI)` / `#if canImport(UIKit)`); the rest works on both.
 
