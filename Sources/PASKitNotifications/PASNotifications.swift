@@ -139,6 +139,21 @@ public final class PASNotifications {
         try await UNUserNotificationCenter.current().add(unRequest)
     }
 
+    /// Fire a notification's content almost immediately, ignoring its real
+    /// trigger — the "test this notification now" button apps wire into
+    /// their DEBUG dev menu. Scheduled under a `test.<id>` identifier so it
+    /// never replaces the request's real pending instance.
+    ///
+    /// - Parameters:
+    ///   - request: The notification whose content to preview.
+    ///   - after: Delay before firing. Clamped to ≥ 1 second.
+    public func fireTest(_ request: PASNotificationRequest, after: TimeInterval = 1) async throws {
+        var test = request
+        test.id = "test.\(request.id)"
+        test.trigger = .interval(max(1, after), repeats: false)
+        try await schedule(test)
+    }
+
     /// Cancel pending (not yet delivered) notifications by identifier.
     /// Unknown identifiers are ignored.
     public func cancel(ids: [String]) {

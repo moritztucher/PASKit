@@ -23,9 +23,10 @@ PASKit owns the mechanism; each app owns its vocabulary: when to schedule, the c
 | `onResponse(_:)` | Registers the tap router (`PASNotificationResponse` → app navigation). Delivers a buffered cold-start response immediately on registration. |
 | `requestAuthorization(options:)` | Permission prompt primitive. Timing is app policy — ask at an earned moment. |
 | `schedule(_ request:)` | Schedule a `PASNotificationRequest`. Re-using an `id` replaces the pending request — idempotent by design. |
+| `fireTest(_ request:after:)` | Fire a notification's content now (≥1s), under a `test.<id>` identifier so it never replaces the real pending instance — the "test this notification" button apps wire into their DEBUG dev menu. |
 | `cancel(ids:)` / `cancelAll()` / `pendingIDs()` | Pending-request management. |
 | `setBadgeCount(_:)` | App-icon badge; `0` clears. |
-| `PASNotificationTrigger` | `.interval(_:repeats:)`, `.calendar(_:repeats:)` (e.g. `DateComponents(hour: 20)` for 8pm local), `.at(Date)` sugar. |
+| `PASNotificationTrigger` | `.interval(_:repeats:)`, `.calendar(_:repeats:)` (e.g. `DateComponents(hour: 20)` for 8pm local), `.at(Date)` one-shot sugar, `.dailyAt(hour:minute:)` / `.dailyAt(_ date:)` daily-reminder sugar (repeating calendar at a wall-clock time; the `Date` overload extracts hour/minute from the user's picked time). |
 
 ## Out of scope
 

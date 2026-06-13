@@ -18,7 +18,7 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 | `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `View.paskitGlass(...)` + `View.paskitGlassButtonStyle(...)` (iOS 26 with pre-26 fallback), `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `ChangelogView` (`ChangelogEntry` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS), onboarding engine (`PASOnboardingFlow` + `View.pasOnboardingTransition` + `PASOnboardingProgressBar`), dev-menu scaffold (`View.pasDevelopmentOverlay` + `PASDevelopmentMenu`), toasts (`View.pasToast` + `PASToast`). |
 | `PASKitPurchases` | RevenueCat facade: `PASPurchases.shared.configure(...)` / `.customerInfo` (observable, stream-fed) / `.isEntitled` / `.offerings` / `.currentOffering` / `.offering(identifier:)` / `.products` / `.purchase(package/product)` → `PASPurchaseResult` / `.restorePurchases` / `.logIn` / `.logOut`. App owns entitlement + product IDs and the paywall UI. |
 | `PASKitAnalytics` | PostHog facade: `PASAnalytics.shared.setup(...)` / `.capture` / `.screen` / `.identify` / `.register` / `.reset` / `.optIn` / `.optOut` / `.flush` / `.isFeatureEnabled` / `.featureFlagPayload`. App owns event vocabulary as an extension on `PASAnalytics`. |
-| `PASKitNotifications` | Local-notification facade: `PASNotifications.shared.configure(...)` / `.authorizationStatus` + `.isAuthorized` (observable) / `.onResponse` (tap routing, cold-start buffered) / `.requestAuthorization` / `.schedule(PASNotificationRequest)` / `.cancel(ids:)` / `.cancelAll` / `.pendingIDs` / `.setBadgeCount`. App owns scheduling policy, copy, identifiers, and navigation. |
+| `PASKitNotifications` | Local-notification facade: `PASNotifications.shared.configure(...)` / `.authorizationStatus` + `.isAuthorized` (observable) / `.onResponse` (tap routing, cold-start buffered) / `.requestAuthorization` / `.schedule(PASNotificationRequest)` (triggers incl. `.dailyAt` sugar) / `.fireTest` / `.cancel(ids:)` / `.cancelAll` / `.pendingIDs` / `.setBadgeCount`. App owns scheduling policy, copy, identifiers, and navigation. |
 | `PASKitSharing` | Share-card export: `PASShareCard.render` (SwiftUI→`UIImage`), `PASInstagramStories.share`/`.copySticker`, `PASPhotoLibrary.save`, `PASShareItems` + `PASActivitySheet` (sheet + imperative `present`), `PASScaledCardPreview` + `PASTransparencyCheckerboard`. App owns card designs, captions, fallback policy. |
 | `PASKit` (umbrella) | Re-exports every module — one dependency line, `import` modules individually. |
 
@@ -372,8 +372,18 @@ try await PASNotifications.shared.schedule(PASNotificationRequest(
     trigger: .calendar(DateComponents(hour: 20), repeats: false)
 ))
 
+// Daily reminder at a user-picked time — pass the Date, .dailyAt extracts hour/minute:
+try await PASNotifications.shared.schedule(PASNotificationRequest(
+    id: "daily-reminder", title: "Time to practice", body: "Keep your streak alive.",
+    trigger: .dailyAt(settings.reminderTime)        // or .dailyAt(hour: 19, minute: 30)
+))
+// Reschedule on settings change = schedule again (same id). Cancel = cancel(ids:).
+
 // Cancel when the condition clears (e.g. the user opened the app today):
 PASNotifications.shared.cancel(ids: ["streak-protection"])
+
+// DEBUG dev-menu "test notifications" button — preview content now, under a test.* id:
+try await PASNotifications.shared.fireTest(dailyReminderRequest)
 ```
 Rules: never cache a permission boolean — observe `authorizationStatus` (auto-refreshed on iOS foreground return). Use stable, app-vocabulary notification ids (`"streak-protection"`), not UUIDs — replace-on-reschedule + `cancel(ids:)` depend on them. `userInfo` is `[String: String]` routing keys only, not state. Triggers: `.interval(_:repeats:)`, `.calendar(DateComponents, repeats:)`, `.at(Date)`. Remote push (APNs/FCM/OneSignal) is not in the module — added when the first app adopts server-side push; local scheduling works without `configure`, but foreground presentation and tap routing need it.
 

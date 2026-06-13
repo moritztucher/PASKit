@@ -78,6 +78,22 @@ public enum PASNotificationTrigger: Sendable {
         return .calendar(components, repeats: false)
     }
 
+    /// Fire every day at a wall-clock time (sugar over a repeating
+    /// `.calendar`) — the daily-reminder case.
+    public static func dailyAt(hour: Int, minute: Int = 0) -> PASNotificationTrigger {
+        .calendar(DateComponents(hour: hour, minute: minute), repeats: true)
+    }
+
+    /// Fire every day at the hour/minute of `date` — pass the user's picked
+    /// reminder time straight through without extracting components yourself.
+    public static func dailyAt(_ date: Date, calendar: Calendar = .current) -> PASNotificationTrigger {
+        let components = calendar.dateComponents([.hour, .minute], from: date)
+        return .calendar(
+            DateComponents(hour: components.hour ?? 0, minute: components.minute ?? 0),
+            repeats: true
+        )
+    }
+
     var unTrigger: UNNotificationTrigger {
         switch self {
         case let .interval(seconds, repeats):
