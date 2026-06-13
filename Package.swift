@@ -32,7 +32,7 @@ let package = Package(
         // of SwiftLint; avoids pulling swift-syntax into the dependency graph.
         // Deliberately NOT attached to targets as a build-tool plugin: that
         // would run lint (and require plugin trust) in every consumer's build.
-        // CI lints via the command plugin: `swift package plugin swiftlint`.
+        // Lint locally via the command plugin: `swift package plugin swiftlint`.
         .package(url: "https://github.com/SimplyDanny/SwiftLintPlugins", from: "0.59.0"),
         // DocC — enables `swift package generate-documentation`. No catalog
         // shipped; inline `///` comments drive the docs.
