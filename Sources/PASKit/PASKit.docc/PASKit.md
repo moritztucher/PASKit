@@ -32,5 +32,9 @@ PASKit is grown deliberately, not scaffolded upfront. A capability earns a place
 - <doc:BuildPhilosophy>
 
 ### Modules
+- <doc:CoreOverview>
 - <doc:LifecycleOverview>
 - <doc:AnalyticsOverview>
+- <doc:PurchasesOverview>
+- <doc:NotificationsOverview>
+- <doc:SharingOverview>
