@@ -4,7 +4,7 @@ Modular Swift Package for solo iOS founders and small studios shipping multiple 
 
 ## Overview
 
-PASKit is one Swift Package, multiple modules. Each module is a thin, library-quality facade over the infrastructure every iOS app eventually needs — networking, keychain, reachability, logging, app metadata, rate prompts, what's-new sheets, changelog views, version checks, feedback forms, and a generic analytics surface. Apps depend only on the modules they use.
+PASKit is one Swift Package, multiple modules. Each module is a thin, library-quality facade over the infrastructure every iOS app eventually needs — networking, keychain, reachability, logging, app metadata, rate prompts, what's-new sheets, changelog views, version checks, feedback forms, a generic analytics surface, and thin facades over RevenueCat, UNUserNotificationCenter, and share/export. Apps depend only on the modules they use.
 
 The umbrella `PASKit` module re-exports every submodule, so apps that take the umbrella product can `import PASKit` once. Apps that depend only on a specific module import it directly.
 
