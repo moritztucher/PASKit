@@ -54,7 +54,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scheme: [PASKitCore, PASKitLifecycle, PASKitAnalytics]
+        scheme: [PASKitCore, PASKitLifecycle, PASKitAnalytics, PASKitSharing]
     steps:
       - name: Checkout
         uses: actions/checkout@v6

@@ -1,6 +1,6 @@
 # PASKitLifecycle
 
-**Status:** Built — eleven components.
+**Status:** Built — fifteen components.
 **Dependencies:** `PASKitCore`. StoreKit, SwiftUI, MessageUI (iOS), UIKit (iOS).
 **Platforms:** iOS 18+, macOS 15+. The mail composer and the runtime app-icon loader are iOS-only (`#if canImport(MessageUI)` / `#if canImport(UIKit)`); the rest works on both.
 
@@ -21,7 +21,13 @@ Sources/PASKitLifecycle/
 ├── WhatsNew/      WhatsNewCard.swift, WhatsNewCardResultBuilder.swift, WhatsNewView.swift
 ├── Changelog/     ChangelogItem.swift, ChangelogEntry.swift, ChangelogView.swift
 ├── Loading/       DefaultLoadingView.swift, View+Loading.swift
-├── LiquidGlass/   PASGlass.swift, PASGlassButtonVariant.swift, View+PaskitGlass.swift
+├── LiquidGlass/   PASGlass.swift, PASGlassButtonVariant.swift, View+PaskitGlass.swift,
+│                  View+PaskitConcentricClip.swift
+├── Onboarding/    PASOnboardingFlow.swift, PASOnboardingDirection.swift,
+│                  View+PASOnboardingTransition.swift, PASOnboardingProgressBar.swift
+├── Development/   View+PASDevelopmentOverlay.swift, PASDevelopmentMenu.swift
+├── Toast/         View+PASToast.swift, PASToast.swift
+├── Indicators/    PASProgressRing.swift
 └── Settings/      AppInfoFooter.swift
 ```
 
@@ -32,7 +38,7 @@ Sources/PASKitLifecycle/
 
 ### Feedback — ✅ built
 - `View.presentAppFeedback(initialCondition:askLaterCondition:content:)` — same two-stage pattern as `presentAppRating`, but accepting presents the supplied view as a sheet (typically `FeedbackSheet`). Destination view is injected so apps can wire any feedback view. One-shot, persisted via `@AppStorage`. Cross-platform.
-- `FeedbackSheet` — in-app feedback form. PASKit owns the form UI (category picker, name, email, message); caller owns the transport via `onSubmit: @Sendable (FeedbackPayload) async throws -> Void`. Configurable hero (`title`, `subtitle`, `heroSymbol`) and `categories`. Adaptive — two-pane on regular width / macOS, stacked on compact iOS. Surfaces an alert on thrown errors.
+- `FeedbackSheet` — in-app feedback form. PASKit owns the form UI (category picker, name, email, message); caller owns the transport via `onSubmit: @Sendable (FeedbackPayload) async throws -> Void`. Configurable: hero (`title`, `subtitle`, `heroSymbol` — `nil` hides the symbol), `categories`, prefill (`initialName` / `initialEmail` — pass known identity so users don't retype), `showsCloseButton` (ⓧ top-trailing; replaces Cancel on compact). Adaptive — two-pane on regular width / macOS with inline Cancel/Send, stacked on compact iOS with a full-width large Send. Surfaces an alert on thrown errors. Apps with a locked design language can bypass the form and build their own UI over `FeedbackPayload` (XueTang V2 does) — payload + transport stay the shared mechanism.
 - `FeedbackPayload` — the typed payload (`category`, `name`, `email`, `message`).
 - `MailComposerView` (iOS-only) — thin `UIViewControllerRepresentable` over `MFMailComposeViewController`. Static `canSendMail` check to gate presentation.
 
@@ -58,7 +64,29 @@ Sources/PASKitLifecycle/
 - `View.paskitGlass(_:in:)` (surfaces) and `View.paskitGlassButtonStyle(_:)` (buttons). iOS/macOS 26+ uses Apple's `glassEffect` + `.buttonStyle(.glass)`; earlier OSes fall back to `.regularMaterial` (+ optional tint overlay) / `.borderedProminent` (or `.bordered` for `.clear`).
 - `PASGlass` — chainable: `.regular.tint(...)` colours the material, `.foreground(...)` colours the wrapped content.
 - `PASGlassButtonVariant` — `.regular` / `.clear`.
+- `View.paskitConcentricClip(fallbackRadius:)` — iOS/macOS 26+ clips with `ConcentricRectangle()` (radius auto-derived from the ancestor's `.containerShape` and inset); pre-26 falls back to a `RoundedRectangle` with the supplied radius (typically `containerRadius − inset`).
 - Surfaces only — PASKit deliberately does not wrap `.toolbarBackground` / `.toolbarForegroundStyle`; those are already cross-version and nav bars adopt Liquid Glass automatically on iOS 26.
+
+### Onboarding — ✅ built
+- `PASOnboardingFlow<Step: Hashable>` — `@Observable @MainActor` step engine: index-based navigation over a **live step list** (closure, re-evaluated on access, so conditional flows stay correct as answers change; static list via convenience init). `current` / `count` / `isFirst` / `isLast`, `progress = (index+1)/count`, `advance()` / `back()` (bounded, set `direction`), `go(to:)` (jump with direction from index comparison — used by draft resume). Index clamps when a conditional list shrinks underneath it. Engine only — step vocabulary, step views, and navigation chrome stay per-app (the chrome diverged across all surveyed apps; one had no nav buttons at all).
+- `PASOnboardingDirection` — `.forward` / `.backward`.
+- `View.pasOnboardingTransition(step:direction:animation:)` — the step-change choreography every container hand-rolled: `.id(step)` + direction-flipped asymmetric `.move + .opacity` transition + matching animation (pass the app's motion token).
+- `PASOnboardingProgressBar` — slim capsule bar, track `.quaternary` / fill `.tint`, animated, accessibility value as percentage.
+- Resume-after-kill pairs with `PASDraft` (PASKitCore): snapshot answers + current step on change/scene-phase, at launch hydrate answers **first**, then `flow.go(to: restoredStep)`.
+- Extracted from three production implementations (66-day-challenge app, workout app, habit app); the conditional-steps + draft-resume design follows the workout app's, the most evolved of the three.
+
+### Development — ✅ built
+- `View.pasDevelopmentOverlay(alignment:menu:)` — floating "DEV" capsule (hammer + monospaced label, white on `.tint`, `accessibilityIdentifier("PAS_DEV_OVERLAY")`) presenting the app's dev menu as a sheet. **Compile-time DEBUG-gated**: in release the modifier body is `self` — the symbol stays available so call sites build in every configuration; the menu closure is never invoked in release but must compile (gate DEBUG-only menu types *inside* the closure, or gate the call site). TestFlight builds are release config, so testers never see it; a runtime escape hatch gets added only if dev tooling in TestFlight becomes a real need.
+- `PASDevelopmentMenu(title:content:)` — menu container chrome: `NavigationStack` + `Form` + inline title + Done. Sections are the app's vocabulary (state toggles, demo seeds, reset buttons, mock-screen links) as plain `Form` content.
+- Extracted from four apps' independent dev tooling (floating-overlay, dedicated screen, and settings-section variants); the shell is shared, every menu's contents stay per-app.
+
+### Toast — ✅ built
+- `View.pasToast(isPresented:duration:alignment:content:)` and `View.pasToast(item:duration:alignment:content:)` — toast lifecycle: overlay placement (default `.bottom`), slide+fade transition (fade-only under Reduce Motion), spring animation, auto-dismiss after `duration` (default 4s; `nil` = sticky). Dismiss runs on `.task(id:)` so structured cancellation re-arms the timer correctly — a new `item` restarts it (the stale-timer bug a bare `Task.sleep` causes can't happen). Use `item:` whenever consecutive triggers change content.
+- `PASToast` — default content row: optional SF symbol + tint, message, optional trailing action ("Undo"); `.ultraThickMaterial` with a Reduce Transparency solid fallback, 16pt rounded, soft shadow. Apps with a locked design language pass their own view and share only the lifecycle.
+- Extracted from three apps' hand-rolled toasts (undo snackbar, saved-to-Photos capsule, set-logged row).
+
+### Indicators — ✅ built
+- `PASProgressRing` — circular progress indicator, the circular sibling of `PASOnboardingProgressBar`. Track defaults to a faint adaptive grey (override via `trackColor`), fill is `.tint`, optional `@ViewBuilder` center label, `size`/`lineWidth` params, progress clamped 0…1, `-90°` start + `.round` cap, percentage a11y, spring-animates on progress change. Extracted from four apps' rings (the only divergence was color — handled by `.tint` + the track param).
 
 ### Settings — ✅ built
 - `AppInfoFooter` (iOS-only) — Settings-screen footer with app icon (via `CFBundleIcons` → `CFBundlePrimaryIcon` → `CFBundleIconFiles`) + display name + version.

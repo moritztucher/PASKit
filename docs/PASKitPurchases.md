@@ -1,43 +1,51 @@
 # PASKitPurchases
 
-> **Status: Planned for v0.2.0.** Not part of the v0.1.0 release. This spec stays in the repo as the design target.
+> **Status: Shipped (v0.2.0-dev).** Built when XueTang V2 became the first consuming app to take payment (premium subscription + consumable coin packs).
 
-**Status:** Deferred to v0.2.0 — module source and RevenueCat dependency are commented out in `Package.swift`. Module API not yet written.
-**Build trigger:** When the first consuming app needs to take payment.
-**Dependencies:** `RevenueCat` SDK (`purchases-ios-spm`, from 5.67.0) + `PASKitCore`. `RevenueCatUI` is wired in alongside the hosted-paywall code, not the scaffold.
+**Dependencies:** `RevenueCat` SDK (`purchases-ios-spm`, from 5.67.0) + `PASKitCore`. `RevenueCatUI` is **not** linked — it joins the module if/when an app wants the hosted paywall (see below).
 
 ## Purpose
 
-A thin, concrete wrapper over RevenueCat — entitlements, feature gating, and presentation of the RevenueCat-hosted paywall. A convenience wrapper, **not** a vendor-abstraction layer: RevenueCat is the committed vendor, the wrapper does not pretend it is swappable.
+A thin, concrete wrapper over RevenueCat — configuration, live entitlement state, offerings/products, the purchase + restore flow, and user identity. A convenience wrapper, **not** a vendor-abstraction layer: RevenueCat is the committed vendor, RevenueCat types (`Offering`, `Package`, `CustomerInfo`, `StoreProduct`) pass through unwrapped.
 
-## Scope
+## Surface
 
-- Wrap the `RevenueCat` + `RevenueCatUI` SDKs behind one facade.
-- Entitlements as an app-supplied enum (typed, not stringly).
-- Feature-gate helpers — check entitlement, gate a view/feature.
-- Present the RevenueCat **hosted paywall** (dashboard-configured, remotely updatable, Experiments for A/B). No custom paywall UI — RevenueCat renders it.
-- User identity — `logIn` / `logOut`. **Shares one identity with `PASKitAnalytics`** (see below).
+| API | Purpose |
+|---|---|
+| `PASPurchases.shared.configure(PASPurchasesConfig)` | One-time SDK setup at launch (public SDK key, optional `appUserID`, `debugLogs`). Idempotent. Starts the customer-info stream. |
+| `customerInfo` | Observable, kept live by RevenueCat's customer-info stream — purchases, renewals, refunds, restores, other-device changes. The single source of truth for gating. |
+| `isEntitled(_:)` | Entitlement check; accepts a raw `String` or any `String`-backed enum so apps keep a typed entitlement vocabulary. |
+| `offerings()` / `currentOffering()` / `offering(identifier:)` | Dashboard offerings for custom paywall UI. |
+| `products(_:)` | Direct `StoreProduct` fetch by product ID — for consumables addressed outside an offering. |
+| `purchase(_ package:)` / `purchase(_ product:)` → `PASPurchaseResult` | Purchase flow; result carries `customerInfo`, `transaction`, `userCancelled`. |
+| `restorePurchases()` | Wire to an explicit "Restore Purchases" control (App Review requirement). |
+| `logIn(userId:)` / `logOut()` | Identity. **Shares one identity with `PASKitAnalytics`** — pass the same app-supplied user ID to both so revenue and analytics join on one key (convention, not code coupling — the modules stay independent). |
+| `offering(firstOf:)` | Offering fallback chain: first existing identifier, else `currentOffering()` — the "campaign offering, else default" pattern. |
+| `StoreProduct.pasSavingsPercent(comparedToMonthly:)` / `PASPricingMath.savingsPercent` | Honest savings-%: yearly per-month price against the **live** monthly price, so the badge stays correct per storefront and after price changes. `nil` when ≤ 0 — never a "save 0%" badge. Pure math is public for tests. |
+| `Package.pasHasFreeTrial` / `StoreProduct.pasHasFreeTrial` | Intro offer is a free trial — drives "Start N-day free trial" CTAs and fine print. |
+| `PASPaywallFlow` | `@Observable` purchase/restore state machine for app-owned paywall UI: `isPurchasing`, `errorMessage` + alert-friendly `isShowingError` binding, user-cancel swallowed silently, `nil`-package → unreachable message, clean-but-unentitled restore → "no purchase found". Copy parameterizable at init (English defaults). **Writes no app state** — returns whether the entitlement is active (for dismissal flow); gating stays on `customerInfo`. |
 
 ## Out of scope
 
-- Custom paywall layouts — the paywall is RevenueCat-hosted by decision.
-- Code-level Apple-compliance enforcement — not possible with a hosted paywall (see below).
+- Custom paywall layouts — each app owns its paywall UI and merchandising copy.
+- Wallet/virtual-currency state — RevenueCat's server-side Virtual Currencies require a backend (secret key) to debit. Backend-less apps sell **consumable products** through `purchase` and keep the wallet client-side; the app credits coins after a non-cancelled purchase. PASKit owns the purchase mechanism, the app owns the wallet.
+- Code-level Apple-compliance enforcement — paywall layout is app territory; compliance is a checklist (below).
 
 ## Design decisions
 
-- **Paywall = RevenueCat hosted.** There is no separate "paywall" module; paywall presentation lives here. Configured in the RevenueCat dashboard, updatable without an app release.
-- **Apple 2026 paywall compliance is a config checklist, not code.** Because the paywall is RC-hosted, PASKit cannot enforce layout. Compliance is a checklist for configuring the RC offering.
-- **Unified identity.** `PASKitPurchases.logIn` and `PASKitAnalytics.identify` consume the same app-supplied user ID, so revenue and analytics data join on one key. Common failure mode in apps that wire each SDK independently — PASKit closes the gap.
+- **Custom-paywall-first.** The original spec planned hosted-paywall-only. The first real consumer (XueTang V2) ships a locked, custom-designed paywall — so the module's surface is the purchase *flow* (offerings → purchase → entitlement), not paywall rendering. **Hosted paywall (`RevenueCatUI`) is deferred** until the first app wants the dashboard-rendered paywall; it will land as an additive presentation helper without changing the flow surface.
+- **No vendor abstraction.** RevenueCat types pass through. Apps `import PASKitPurchases` and use `Package` / `CustomerInfo` directly.
+- **Entitlements as app vocabulary.** The module takes `String`-backed enums; entitlement IDs live in the app.
+- **Unified identity.** `PASPurchases.logIn` and `PASAnalytics.identify` consume the same app-supplied user ID — by documented convention, not a cross-module dependency.
 
-## Apple 2026 paywall compliance checklist
+## Apple 2026 paywall compliance checklist (for consuming apps)
 
 - [ ] Billed amount is the visually dominant number (no oversized weekly-equivalent).
 - [ ] No stacked-discount paywall; no decline → downsell modal (bannable under 3.1.2c).
 - [ ] IAP present alongside any external payment link (external links US-only).
+- [ ] Explicit "Restore Purchases" control wired to `restorePurchases()`.
 
-## What needs to be done
+## Future work
 
-- [ ] Facade over `RevenueCat` + `RevenueCatUI`.
-- [ ] App-supplied entitlement enum + gating helpers.
-- [ ] Hosted-paywall presentation helper.
-- [ ] `logIn`/`logOut` wired to the shared `PASKitAnalytics` identity.
+- [ ] Hosted-paywall presentation helper (`RevenueCatUI`) — when the first app wants it.
+- [ ] Promo-code / win-back offer helpers — when the first app runs them.
