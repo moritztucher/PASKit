@@ -10,7 +10,7 @@
 
 ## What it is
 
-One Swift Package, multiple modules. Each module is a thin, library-quality facade over the infrastructure every iOS app eventually needs — networking, keychain, reachability, logging, app metadata, rate prompts, what's-new sheets, changelog views, version checks, feedback forms, and a generic analytics surface. Built and extracted from production apps over 12 months. Apps depend only on what they use.
+One Swift Package, multiple modules. Each module is a thin, library-quality facade over the infrastructure every iOS app eventually needs — networking, keychain, reachability, logging, app metadata, observable settings, calendar/streak math, App Group storage; rate prompts, onboarding, what's-new, changelog, feedback, toasts, dev menus; and facades over RevenueCat, PostHog, UNUserNotificationCenter, and share/export. Built and extracted from production apps over 12 months. Apps depend only on what they use.
 
 ## Who it's for
 
@@ -47,10 +47,12 @@ One Swift package, one library product per module — an app imports only what i
 
 | Module | Status | Purpose | Spec |
 |--------|--------|---------|------|
-| `PASKitCore` | v0.1.0 | App + device metadata, networking, reachability, keychain, logging, haptics | [docs/PASKitCore.md](docs/PASKitCore.md) |
-| `PASKitLifecycle` | v0.1.0 | Rate prompt, version check, what's-new, changelog, feedback form, app-info footer, Liquid Glass | [docs/PASKitLifecycle.md](docs/PASKitLifecycle.md) |
-| `PASKitAnalytics` | v0.1.0 | Thin PostHog facade — generic capture surface, app owns the vocabulary | [docs/PASKitAnalytics.md](docs/PASKitAnalytics.md) |
-| `PASKitPurchases` | **Planned (v0.2.0)** | RevenueCat wrapper — entitlements, gating, hosted paywall | [docs/PASKitPurchases.md](docs/PASKitPurchases.md) |
+| `PASKitCore` | Built | App + device metadata, networking, reachability, keychain, logging, haptics, observable settings, styling mechanisms, calendar math + durations, streak engine, App Group storage | [docs/PASKitCore.md](docs/PASKitCore.md) |
+| `PASKitLifecycle` | Built | Rate prompt, version check, what's-new, changelog, feedback form, app-info footer, Liquid Glass, onboarding engine, dev-menu scaffold, toasts, progress ring | [docs/PASKitLifecycle.md](docs/PASKitLifecycle.md) |
+| `PASKitAnalytics` | Built | Thin PostHog facade — generic capture surface, app owns the vocabulary | [docs/PASKitAnalytics.md](docs/PASKitAnalytics.md) |
+| `PASKitPurchases` | Built | RevenueCat facade — entitlements, offerings/products, purchase + restore, paywall logic layer (pricing math, `PASPaywallFlow`); app owns paywall UI + IDs | [docs/PASKitPurchases.md](docs/PASKitPurchases.md) |
+| `PASKitNotifications` | Built | UNUserNotificationCenter facade — observable authorization, schedule/cancel, tap routing, daily-reminder sugar; app owns policy + copy | [docs/PASKitNotifications.md](docs/PASKitNotifications.md) |
+| `PASKitSharing` | Built | Share-card export — SwiftUI→image render, Instagram Stories, save-to-Photos, activity sheet; app owns card designs | [docs/PASKitSharing.md](docs/PASKitSharing.md) |
 
 Modules are built on first real need, not scaffolded up front.
 
