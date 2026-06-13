@@ -1,5 +1,5 @@
 //
-//  AppFeedbackHelper.swift
+//  View+PresentAppFeedback.swift
 //  PASKitLifecycle
 //
 //  Two-stage give-us-feedback prompt. Same shape as `presentAppRating` — the

@@ -1,6 +1,6 @@
 # Haptics — notes
 
-Internal notes / things to revisit. Not user-facing — see the DocC catalog for usage.
+Internal notes / things to revisit. Not user-facing — see the inline `///` docs and the folder `README.md` for usage.
 
 ## `View.hapticOnTap` vs. `.sensoryFeedback`
 
