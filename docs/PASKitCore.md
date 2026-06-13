@@ -26,7 +26,8 @@ Sources/PASKitCore/
 │                  PASDraft.swift
 ├── Styling/       Animation+ReducedMotion.swift, Color+LightDark.swift,
 │                  Font+PASScaled.swift, PASFontRegistration.swift
-└── Time/          Date+PASCalendar.swift, PASDurationFormat.swift
+├── Time/          Date+PASCalendar.swift, PASDurationFormat.swift
+└── Streak/        PASStreakState.swift, PASStreakEngine.swift
 ```
 
 ## Components
@@ -82,7 +83,17 @@ Brand-free styling *mechanisms* — the layer the per-app token systems sit on. 
 ### Time — ✅ built
 - `Date` extension (`pas`-prefixed, `calendar:` injectable for tests, defaults `.current`): `pasStartOfDay` / `pasEndOfDay`, `pasIsSameDay(as:)`, `pasDaysSince(_:)` (both ends startOfDay-normalized — kills the cross-midnight off-by-one), `pasAdding(days:)`, `pasStartOfWeek()` (honors `firstWeekday`), `pasHoursUntilMidnight()`. The day-gating/streak/rollover building blocks.
 - `PASDurationFormat` — `compact(seconds:)` (`"42s"` / `"4m 12s"` / `"1h 03m"`) and `clock(seconds:)` (`"4:12"` / `"1:04:12"`); `TimeInterval` + `Int` overloads, negatives clamp.
+- `pasIsSameWeek(as:)` — `weekOfYear`-granularity comparison for weekly-counter resets (exact week-start equality spuriously resets when a timezone/`firstWeekday` change shifts the computed instant).
 - Deliberately **not** wrapped: date-to-string formatting (`formatted(.dateTime…)`, `RelativeDateTimeFormatter` already cover it) and 1:1 `Calendar` aliases (`isToday` etc.).
+
+### Streak — ✅ built
+- `PASStreakState` — `Codable/Equatable/Sendable` value (`streak`, raise-only `longestStreak`, `lastActiveDay`, `freezeBalance`, `lastFreezeGrantAt`). Persistence stays app-side — SwiftData, Realm, or `@PASDefault`/`PASDraft` all fit.
+- `PASStreakEngine.rolledOver(_:today:calendar:config:)` — pure rollover in the proven order: freeze-consume (exactly one missed day; the frozen day counts as covered so re-rolls are idempotent; multi-day gaps reset without consuming) → streak roll (today/yesterday survives) → free grant (after consume so a fresh grant isn't immediately spent; at-cap skips **without** advancing the timestamp; backwards clock never grants). Returns `PASStreakRolloverOutcome` (`freezeConsumed` / `freezeGranted` / `streakDidReset`) for one-time notices.
+- `PASStreakEngine.recordingActivity(_:at:calendar:config:)` — rolls over first, then first-activity-today increments + stamps `lastActiveDay`; same-day repeats are no-ops.
+- `PASStreakConfig` — `freezeCap` / `freeFreezeInterval`, both default-off (apps without freezes pass nothing).
+- **Caller rule:** run `rolledOver` at launch **and on every `scenePhase == .active`** — iOS keeps apps resident for days; launch-only rollover leaves streaks stale.
+- Milestone thresholds/tables (7/21/66, icons, copy) are app vocabulary — not extracted.
+- Extracted from a shipped learning app's engine; assertion-verified for the freeze ordering rules above.
 
 ## Notes
 

@@ -41,6 +41,15 @@ public extension Date {
         calendar.date(byAdding: .day, value: days, to: self) ?? self
     }
 
+    /// Whether both dates fall in the same week (`weekOfYear` granularity).
+    /// Use this for weekly-counter resets instead of comparing stored
+    /// week-start dates for equality — a timezone or `firstWeekday` change
+    /// shifts the computed instant, and exact equality would spuriously
+    /// reset the counter mid-week.
+    func pasIsSameWeek(as other: Date, calendar: Calendar = .current) -> Bool {
+        calendar.isDate(self, equalTo: other, toGranularity: .weekOfYear)
+    }
+
     /// Start of the week containing this date, honoring the calendar's
     /// `firstWeekday` — the week-rollover anchor.
     func pasStartOfWeek(calendar: Calendar = .current) -> Date {

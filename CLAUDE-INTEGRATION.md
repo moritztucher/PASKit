@@ -14,7 +14,7 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 
 | Module | Provides |
 |--------|----------|
-| `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`); haptics (`Haptics.play`, `View.hapticOnTap`); settings (`PASSettingsStore` + `@PASDefault` + `UserDefaultsStorable`); draft persistence (`PASDraft`); styling mechanisms (`Animation.respectingReducedMotion`, `View.pasAnimation`, `Color(light:dark:)`, `Font.pasScaled`, `PASFontRegistration`); calendar math + durations (`Date.pas…` helpers, `PASDurationFormat`). |
+| `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`); haptics (`Haptics.play`, `View.hapticOnTap`); settings (`PASSettingsStore` + `@PASDefault` + `UserDefaultsStorable`); draft persistence (`PASDraft`); styling mechanisms (`Animation.respectingReducedMotion`, `View.pasAnimation`, `Color(light:dark:)`, `Font.pasScaled`, `PASFontRegistration`); calendar math + durations (`Date.pas…` helpers, `PASDurationFormat`); streak engine (`PASStreakState` + `PASStreakEngine` + `PASStreakConfig`). |
 | `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `View.paskitGlass(...)` + `View.paskitGlassButtonStyle(...)` (iOS 26 with pre-26 fallback), `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `ChangelogView` (`ChangelogEntry` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS), onboarding engine (`PASOnboardingFlow` + `View.pasOnboardingTransition` + `PASOnboardingProgressBar`), dev-menu scaffold (`View.pasDevelopmentOverlay` + `PASDevelopmentMenu`), toasts (`View.pasToast` + `PASToast`). |
 | `PASKitPurchases` | RevenueCat facade: `PASPurchases.shared.configure(...)` / `.customerInfo` (observable, stream-fed) / `.isEntitled` / `.offerings` / `.currentOffering` / `.offering(identifier:)` / `.products` / `.purchase(package/product)` → `PASPurchaseResult` / `.restorePurchases` / `.logIn` / `.logOut`. App owns entitlement + product IDs and the paywall UI. |
 | `PASKitAnalytics` | PostHog facade: `PASAnalytics.shared.setup(...)` / `.capture` / `.screen` / `.identify` / `.register` / `.reset` / `.optIn` / `.optOut` / `.flush` / `.isFeatureEnabled` / `.featureFlagPayload`. App owns event vocabulary as an extension on `PASAnalytics`. |
@@ -98,6 +98,23 @@ PASDurationFormat.compact(seconds: 252)      // "4m 12s" — stats labels
 PASDurationFormat.clock(seconds: 3852)       // "1:04:12" — timers
 ```
 All take `calendar:` (default `.current`) — inject a fixed calendar in tests. For date *strings* use `formatted(.dateTime…)` / `RelativeDateTimeFormatter` — PASKit deliberately doesn't wrap those.
+
+**4d. Streaks — `PASStreakEngine`, not hand-rolled rollover math.**
+Pure value-in/value-out; the app persists `PASStreakState` (it's Codable) wherever it already stores things. **Run `rolledOver` at launch AND on every `scenePhase == .active`** — iOS keeps apps resident for days:
+```swift
+import PASKitCore
+let config = PASStreakConfig(freezeCap: 2, freeFreezeInterval: 30 * 24 * 3600)  // omit → freezes off
+
+let (rolled, outcome) = PASStreakEngine.rolledOver(state, config: config)
+if outcome.freezeConsumed { showStreakSavedNotice() }
+if outcome.streakDidReset { /* optional empathy copy */ }
+
+let (next, firstToday) = PASStreakEngine.recordingActivity(rolled, config: config)
+if firstToday { Haptics.play(.celebration); checkMilestones(next.streak) }  // milestones stay app vocabulary
+
+// Weekly counters reset on week change — granularity compare, never week-start equality:
+if !(weekStart?.pasIsSameWeek(as: .now) ?? false) { weekStart = Date.now.pasStartOfWeek(); weeklyXP = 0 }
+```
 
 **5. Lifecycle UI — use what `PASKitLifecycle` ships before writing your own.**
 
