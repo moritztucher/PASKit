@@ -8,7 +8,7 @@ PASKit was extracted from production apps over twelve months. Five rules shape w
 
 ### 1. Build on real need
 
-A module or feature is built when the *first real app* needs that capability — never speculatively. No module exists "for any future app" before one concrete app consumes it. PASKitPurchases is planned for v0.2.0 because the apps that need it aren't shipped yet.
+A module or feature is built when the *first real app* needs that capability — never speculatively. No module exists "for any future app" before one concrete app consumes it. PASKitPurchases ships the purchase *flow* but not the hosted RevenueCat paywall (`RevenueCatUI`), because the first consuming app renders its own custom paywall — the hosted variant waits for the first app that actually wants it.
 
 ### 2. Design app-agnostic from line one
 

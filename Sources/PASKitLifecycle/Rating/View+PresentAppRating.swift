@@ -1,5 +1,5 @@
 //
-//  AppRatingHelper.swift
+//  View+PresentAppRating.swift
 //  PASKitLifecycle
 //
 //  Two-stage rate-the-app prompt over StoreKit. Caller supplies the trigger

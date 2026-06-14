@@ -34,13 +34,13 @@ swift test
 
 - Swift 6 toolchain, iOS 18+ / macOS 15+.
 - SwiftLint runs as a build-tool plugin — keep the build warning-clean.
-- CI builds on macOS and an iOS simulator and runs the test suite; make sure both `swift build` and `swift test` pass locally before opening a PR.
+- CI builds on macOS and across the per-module iOS simulator schemes, and runs `swift test`. `PASKitCoreTests` (Swift Testing) covers PASKitCore's pure logic; make sure both `swift build` and `swift test` pass locally before opening a PR, and add tests alongside behaviour changes where you can.
 
 ## Pull requests
 
 - **Title:** Conventional Commit form — `type(scope): summary`, same as commits.
 - **Body:** what changed and *why*; link any related issue (`Closes #12`).
-- Keep the PR focused — one feature or fix. Build green and tests passing before opening.
+- Keep the PR focused — one feature or fix. Build green before opening (and any tests passing).
 - Update docs in the same PR when behaviour or the public surface changes (`docs/<Module>.md`, `CLAUDE-INTEGRATION.md`, DocC articles as relevant).
 
 Significant design decisions are recorded in the repo's docs; follow the existing module structure and keep each public type in its own file.

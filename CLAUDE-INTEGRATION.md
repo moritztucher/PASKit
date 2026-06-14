@@ -15,7 +15,7 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 | Module | Provides |
 |--------|----------|
 | `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`); haptics (`Haptics.play`, `View.hapticOnTap`); settings (`PASSettingsStore` + `@PASDefault` + `UserDefaultsStorable`); draft persistence (`PASDraft`); styling mechanisms (`Animation.respectingReducedMotion`, `View.pasAnimation`, `Color(light:dark:)`, `Font.pasScaled`, `PASFontRegistration`); calendar math + durations (`Date.pas…` helpers, `PASDurationFormat`); streak engine (`PASStreakState` + `PASStreakEngine` + `PASStreakConfig`); App Group storage (`PASAppGroupContainer` — store-engine-agnostic, no persistence dependency); pressable button style (`.buttonStyle(.pasPressable())`). |
-| `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `View.paskitGlass(...)` + `View.paskitGlassButtonStyle(...)` (iOS 26 with pre-26 fallback), `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `ChangelogView` (`ChangelogEntry` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS), onboarding engine (`PASOnboardingFlow` + `View.pasOnboardingTransition` + `PASOnboardingProgressBar`), dev-menu scaffold (`View.pasDevelopmentOverlay` + `PASDevelopmentMenu`), toasts (`View.pasToast` + `PASToast`), progress ring (`PASProgressRing`). |
+| `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `View.pasGlass(...)` + `View.pasGlassButtonStyle(...)` (iOS 26 with pre-26 fallback), `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `ChangelogView` (`ChangelogEntry` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS), onboarding engine (`PASOnboardingFlow` + `View.pasOnboardingTransition` + `PASOnboardingProgressBar`), dev-menu scaffold (`View.pasDevelopmentOverlay` + `PASDevelopmentMenu`), toasts (`View.pasToast` + `PASToast`), progress ring (`PASProgressRing`). |
 | `PASKitPurchases` | RevenueCat facade: `PASPurchases.shared.configure(...)` / `.customerInfo` (observable, stream-fed) / `.isEntitled` / `.offerings` / `.currentOffering` / `.offering(identifier:)` / `.products` / `.purchase(package/product)` → `PASPurchaseResult` / `.restorePurchases` / `.logIn` / `.logOut`. App owns entitlement + product IDs and the paywall UI. |
 | `PASKitAnalytics` | PostHog facade: `PASAnalytics.shared.setup(...)` / `.capture` / `.screen` / `.identify` / `.register` / `.reset` / `.optIn` / `.optOut` / `.flush` / `.isFeatureEnabled` / `.featureFlagPayload`. App owns event vocabulary as an extension on `PASAnalytics`. |
 | `PASKitNotifications` | Local-notification facade: `PASNotifications.shared.configure(...)` / `.authorizationStatus` + `.isAuthorized` (observable) / `.onResponse` (tap routing, cold-start buffered) / `.requestAuthorization` / `.schedule(PASNotificationRequest)` (triggers incl. `.dailyAt` sugar) / `.fireTest` / `.cancel(ids:)` / `.cancelAll` / `.pendingIDs` / `.setBadgeCount`. App owns scheduling policy, copy, identifiers, and navigation. |
@@ -263,19 +263,19 @@ SomeView().loading(isPresented: $isLoading) {
 
 Liquid Glass — surfaces only (cards, sheet content, custom backgrounds). iOS 26+ uses Apple's `glassEffect`; pre-26 falls back to `.regularMaterial` (+ optional tint overlay):
 ```swift
-Card(...).paskitGlass(in: .rect(cornerRadius: 16))
-Card(...).paskitGlass(.regular.tint(.orange), in: .rect(cornerRadius: 16))      // tint the glass
-Card(...).paskitGlass(.regular.foreground(.white), in: .capsule)                // tint the text
-Card(...).paskitGlass(.regular.tint(.orange).foreground(.white), in: .capsule)  // both
+Card(...).pasGlass(in: .rect(cornerRadius: 16))
+Card(...).pasGlass(.regular.tint(.orange), in: .rect(cornerRadius: 16))      // tint the glass
+Card(...).pasGlass(.regular.foreground(.white), in: .capsule)                // tint the text
+Card(...).pasGlass(.regular.tint(.orange).foreground(.white), in: .capsule)  // both
 ```
 
 For glass buttons (iOS 26+ uses `.buttonStyle(.glass)`; pre-26 falls back to `.borderedProminent` / `.bordered`):
 ```swift
-Button("Continue") { ... }.paskitGlassButtonStyle()         // .regular
-Button("Dismiss") { ... }.paskitGlassButtonStyle(.clear)    // clear variant
+Button("Continue") { ... }.pasGlassButtonStyle()         // .regular
+Button("Dismiss") { ... }.pasGlassButtonStyle(.clear)    // clear variant
 ```
 
-Do not apply `paskitGlass` to nav bars or toolbars — they adopt Liquid Glass automatically on iOS 26 and the existing `.toolbarBackground(_:for:)` / `.toolbarForegroundStyle(_:for:)` are cross-version.
+Do not apply `pasGlass` to nav bars or toolbars — they adopt Liquid Glass automatically on iOS 26 and the existing `.toolbarBackground(_:for:)` / `.toolbarForegroundStyle(_:for:)` are cross-version.
 
 **6. Styling — SwiftUI defaults + the standard environment.** PASKit views use `.tint`, system fonts, `.primary` / `.secondary`. Apps style at the call site (`.tint(.brand)`, `.font(...)`). PASKit owns no design layer — every app keeps its own theme (token values, spacing/radius/motion enums, semantic color names). The brand-free *mechanisms* under those tokens do live in PASKitCore — use them instead of re-rolling:
 ```swift
@@ -294,7 +294,7 @@ Text("Streak").font(.pasScaled(28, relativeTo: .title, weight: .heavy))
 // At launch, when Xcode's generated Info.plist drops UIAppFonts:
 PASFontRegistration.registerBundledFonts(named: ["BrushScript.ttf"])
 ```
-And from PASKitLifecycle's glass shims: `CoverImage().paskitConcentricClip(fallbackRadius: 12)` — iOS 26 `ConcentricRectangle` with pre-26 `RoundedRectangle` fallback.
+And from PASKitLifecycle's glass shims: `CoverImage().pasConcentricClip(fallbackRadius: 12)` — iOS 26 `ConcentricRectangle` with pre-26 `RoundedRectangle` fallback.
 
 Two brand-free UI primitives (colors come from `.tint`; the rest is mechanism — the full styled buttons/cards stay per-app, and prefer Apple's `ContentUnavailableView` for empty states):
 ```swift
@@ -438,7 +438,7 @@ Previews that match the render pixel-for-pixel: `PASScaledCardPreview(cardSize:c
 
 ## Baseline
 
-iOS 18+, macOS 15+, swift-tools 6.3, Swift 6 language mode. SwiftLint via `SimplyDanny/SwiftLintPlugins` — one shared `.swiftlint.yml` in the repo root.
+iOS 18+, macOS 15+, swift-tools 6.2, Swift 6 language mode. SwiftLint via `SimplyDanny/SwiftLintPlugins` — one shared `.swiftlint.yml` in the repo root.
 
 ## Build philosophy
 

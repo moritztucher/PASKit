@@ -1,9 +1,9 @@
 //
-//  View+PaskitConcentricClip.swift
+//  View+PasConcentricClip.swift
 //  PASKitLifecycle
 //
 //  iOS 26 ConcentricRectangle with a pre-26 fallback — sibling of the
-//  paskitGlass shims.
+//  pasGlass shims.
 //
 
 import SwiftUI
@@ -20,9 +20,9 @@ public extension View {
     ///   `fallbackRadius` (typically `containerRadius − inset`).
     ///
     /// ```swift
-    /// CoverImage().paskitConcentricClip(fallbackRadius: 12)
+    /// CoverImage().pasConcentricClip(fallbackRadius: 12)
     /// ```
-    func paskitConcentricClip(fallbackRadius: CGFloat) -> some View {
+    func pasConcentricClip(fallbackRadius: CGFloat) -> some View {
         modifier(PASConcentricClip(fallbackRadius: fallbackRadius))
     }
 }

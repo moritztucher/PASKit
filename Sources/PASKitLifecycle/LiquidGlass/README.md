@@ -6,19 +6,19 @@ iOS 26 Liquid Glass surface + button modifiers with a pre-26 fallback. Surfaces 
 
 - `PASGlass` — chainable: `.regular.tint(...)` colours the glass material, `.foreground(...)` colours the wrapped content.
 - `PASGlassButtonVariant` — `.regular` / `.clear`.
-- `View.paskitGlass(_:in:)` — surface modifier.
-- `View.paskitGlassButtonStyle(_:)` — button style.
+- `View.pasGlass(_:in:)` — surface modifier.
+- `View.pasGlassButtonStyle(_:)` — button style.
 
 ## Example
 
 ```swift
-Card(...).paskitGlass(in: .rect(cornerRadius: 16))
-Card(...).paskitGlass(.regular.tint(.orange), in: .rect(cornerRadius: 16))       // tint glass
-Card(...).paskitGlass(.regular.foreground(.white), in: .capsule)                 // tint text
-Card(...).paskitGlass(.regular.tint(.orange).foreground(.white), in: .capsule)   // both
+Card(...).pasGlass(in: .rect(cornerRadius: 16))
+Card(...).pasGlass(.regular.tint(.orange), in: .rect(cornerRadius: 16))       // tint glass
+Card(...).pasGlass(.regular.foreground(.white), in: .capsule)                 // tint text
+Card(...).pasGlass(.regular.tint(.orange).foreground(.white), in: .capsule)   // both
 
-Button("Continue") { ... }.paskitGlassButtonStyle()
-Button("Dismiss") { ... }.paskitGlassButtonStyle(.clear)
+Button("Continue") { ... }.pasGlassButtonStyle()
+Button("Dismiss") { ... }.pasGlassButtonStyle(.clear)
 ```
 
 iOS 26+ uses Apple's `glassEffect` / `.buttonStyle(.glass)`; earlier OSes fall back to `.regularMaterial` (+ optional tint overlay) / `.borderedProminent` (or `.bordered` for `.clear`).
