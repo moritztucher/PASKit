@@ -127,7 +127,7 @@ Linked: [ADR-0001 — PASKit reconciliation](docs/adr/ADR-0001-paskit-dashboard-
 
 ## Claude Code integration
 
-PASKit ships with [CLAUDE-INTEGRATION.md](CLAUDE-INTEGRATION.md) — drop `@../PASKit/CLAUDE-INTEGRATION.md` (sibling-repo path) into your consuming app's `CLAUDE.md`, and Claude Code sessions automatically know PASKit's API surface and conventions. One of the few Swift Packages designed for AI-augmented iOS development from day one.
+PASKit ships with [CLAUDE-INTEGRATION.md](CLAUDE-INTEGRATION.md) — drop `@../PASKit/CLAUDE-INTEGRATION.md` (sibling-repo path) into your consuming app's `CLAUDE.md`, and Claude Code sessions automatically know PASKit's API surface and conventions — so they reach for PASKit instead of reinventing it.
 
 ## Documentation
 

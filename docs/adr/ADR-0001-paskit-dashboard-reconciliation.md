@@ -16,6 +16,8 @@ The discovery (mid-reconciliation, while migrating XueTang utilities into PASKit
 
 **2. Baseline: iOS 18 / macOS 15 / swift-tools 6.3 / Swift 6 mode.** Matches the Dashboard so migrated code ports without down-port checks. New apps target iOS 18+ regardless. Cost: PASKit cannot serve an iOS-17 app — older apps in the portfolio will not be refactored onto it anyway.
 
+> **Superseded (2026-06):** `swift-tools-version` was lowered to **6.2** so CI's latest-stable Xcode can resolve the package (commit `3be70e3`). The iOS 18 / macOS 15 / Swift 6-mode baseline is unchanged.
+
 **3. One package, multiple targets, per-module + umbrella products.** Rejected the separate-packages-per-module restructure. Per-module products keep extension targets surgical (a widget cannot accidentally link RevenueCat); the umbrella `PASKit` product gives the main app target a single dependency line. Same shape as ADR-0002 for the same reasons.
 
 **4. PASKit owns no design layer.** A draft `PASKitUI` (Theme + Color+LightDark) was added then reverted — UI / theme is per-app. Every app owns its own visual identity. PASKit imposes no styling; lifecycle views use SwiftUI defaults and read app styling via the standard environment (`.tint`, `.font`, `.preferredColorScheme`).

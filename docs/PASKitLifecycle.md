@@ -1,6 +1,6 @@
 # PASKitLifecycle
 
-**Status:** Built — fifteen components.
+**Status:** Built — twelve components.
 **Dependencies:** `PASKitCore`. StoreKit, SwiftUI, MessageUI (iOS), UIKit (iOS).
 **Platforms:** iOS 18+, macOS 15+. The mail composer and the runtime app-icon loader are iOS-only (`#if canImport(MessageUI)` / `#if canImport(UIKit)`); the rest works on both.
 
@@ -21,8 +21,8 @@ Sources/PASKitLifecycle/
 ├── WhatsNew/      WhatsNewCard.swift, WhatsNewCardResultBuilder.swift, WhatsNewView.swift
 ├── Changelog/     ChangelogItem.swift, ChangelogEntry.swift, ChangelogView.swift
 ├── Loading/       DefaultLoadingView.swift, View+Loading.swift
-├── LiquidGlass/   PASGlass.swift, PASGlassButtonVariant.swift, View+PaskitGlass.swift,
-│                  View+PaskitConcentricClip.swift
+├── LiquidGlass/   PASGlass.swift, PASGlassButtonVariant.swift, View+PasGlass.swift,
+│                  View+PasConcentricClip.swift
 ├── Onboarding/    PASOnboardingFlow.swift, PASOnboardingDirection.swift,
 │                  View+PASOnboardingTransition.swift, PASOnboardingProgressBar.swift
 ├── Development/   View+PASDevelopmentOverlay.swift, PASDevelopmentMenu.swift
@@ -61,10 +61,10 @@ Sources/PASKitLifecycle/
 - `DefaultLoadingView` — public so apps that want the default treatment with extra decoration can compose it directly. Extracted from a shipped Mandarin-learning app.
 
 ### LiquidGlass — ✅ built
-- `View.paskitGlass(_:in:)` (surfaces) and `View.paskitGlassButtonStyle(_:)` (buttons). iOS/macOS 26+ uses Apple's `glassEffect` + `.buttonStyle(.glass)`; earlier OSes fall back to `.regularMaterial` (+ optional tint overlay) / `.borderedProminent` (or `.bordered` for `.clear`).
+- `View.pasGlass(_:in:)` (surfaces) and `View.pasGlassButtonStyle(_:)` (buttons). iOS/macOS 26+ uses Apple's `glassEffect` + `.buttonStyle(.glass)`; earlier OSes fall back to `.regularMaterial` (+ optional tint overlay) / `.borderedProminent` (or `.bordered` for `.clear`).
 - `PASGlass` — chainable: `.regular.tint(...)` colours the material, `.foreground(...)` colours the wrapped content.
 - `PASGlassButtonVariant` — `.regular` / `.clear`.
-- `View.paskitConcentricClip(fallbackRadius:)` — iOS/macOS 26+ clips with `ConcentricRectangle()` (radius auto-derived from the ancestor's `.containerShape` and inset); pre-26 falls back to a `RoundedRectangle` with the supplied radius (typically `containerRadius − inset`).
+- `View.pasConcentricClip(fallbackRadius:)` — iOS/macOS 26+ clips with `ConcentricRectangle()` (radius auto-derived from the ancestor's `.containerShape` and inset); pre-26 falls back to a `RoundedRectangle` with the supplied radius (typically `containerRadius − inset`).
 - Surfaces only — PASKit deliberately does not wrap `.toolbarBackground` / `.toolbarForegroundStyle`; those are already cross-version and nav bars adopt Liquid Glass automatically on iOS 26.
 
 ### Onboarding — ✅ built
