@@ -15,7 +15,7 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 | Module | Provides |
 |--------|----------|
 | `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`); haptics (`Haptics.play`, `View.hapticOnTap`); settings (`PASSettingsStore` + `@PASDefault` + `UserDefaultsStorable`); draft persistence (`PASDraft`); styling mechanisms (`Animation.respectingReducedMotion`, `View.pasAnimation`, `Color(light:dark:)`, `Font.pasScaled`, `PASFontRegistration`); calendar math + durations (`Date.pas…` helpers, `PASDurationFormat`); streak engine (`PASStreakState` + `PASStreakEngine` + `PASStreakConfig`); App Group storage (`PASAppGroupContainer` — store-engine-agnostic, no persistence dependency); pressable button style (`.buttonStyle(.pasPressable())`). |
-| `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `View.pasGlass(...)` + `View.pasGlassButtonStyle(...)` (iOS 26 with pre-26 fallback), `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` with `@WhatsNewCardResultBuilder`, `ChangelogView` (`ChangelogEntry` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS), onboarding engine (`PASOnboardingFlow` + `View.pasOnboardingTransition` + `PASOnboardingProgressBar`), dev-menu scaffold (`View.pasDevelopmentOverlay` + `PASDevelopmentMenu`), toasts (`View.pasToast` + `PASToast`), progress ring (`PASProgressRing`). |
+| `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `View.pasGlass(...)` + `View.pasGlassButtonStyle(...)` (iOS 26 with pre-26 fallback), `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` + `WhatsNewGate` + `WhatsNewHighlights` (build-number-gated post-update sheet), `ChangelogView` (`ReleaseNote` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS), onboarding engine (`PASOnboardingFlow` + `View.pasOnboardingTransition` + `PASOnboardingProgressBar`), dev-menu scaffold (`View.pasDevelopmentOverlay` + `PASDevelopmentMenu`), toasts (`View.pasToast` + `PASToast`), progress ring (`PASProgressRing`). |
 | `PASKitPurchases` | RevenueCat facade: `PASPurchases.shared.configure(...)` / `.customerInfo` (observable, stream-fed) / `.isEntitled` / `.offerings` / `.currentOffering` / `.offering(identifier:)` / `.products` / `.purchase(package/product)` → `PASPurchaseResult` / `.restorePurchases` / `.logIn` / `.logOut`. App owns entitlement + product IDs and the paywall UI. |
 | `PASKitAnalytics` | PostHog facade: `PASAnalytics.shared.setup(...)` / `.capture` / `.screen` / `.identify` / `.register` / `.reset` / `.optIn` / `.optOut` / `.flush` / `.isFeatureEnabled` / `.featureFlagPayload`. App owns event vocabulary as an extension on `PASAnalytics`. |
 | `PASKitNotifications` | Local-notification facade: `PASNotifications.shared.configure(...)` / `.authorizationStatus` + `.isAuthorized` (observable) / `.onResponse` (tap routing, cold-start buffered) / `.requestAuthorization` / `.schedule(PASNotificationRequest)` (triggers incl. `.dailyAt` sugar) / `.fireTest` / `.cancel(ids:)` / `.cancelAll` / `.pendingIDs` / `.setBadgeCount`. App owns scheduling policy, copy, identifiers, and navigation. |
@@ -148,31 +148,64 @@ let result = await VersionCheckManager().checkIfAppUpdateAvailable()
 // AppUpdateView(update:, forceUpdate: false) — dismissible nudge by default
 ```
 
-What's-new (one-shot post-update sheet):
+Release notes — author each release **once**, as a `[ReleaseNote]` newest build first. It drives both the post-update sheet and the Settings changelog. Do not write your own release-note model:
 ```swift
-WhatsNewView(appName: "MyApp", title: "What's New") {
-    WhatsNewCard(symbol: "star.fill", title: "X", subtitle: "Y")
-    WhatsNewCard(symbol: "bolt.fill", title: "A", subtitle: "B")
-} onContinue: { dismiss() }
-```
-SF Symbol names for `symbol`, not asset names.
-
-Changelog (multi-version Settings screen — distinct from the one-shot `WhatsNewView`):
-```swift
-NavigationLink("Changelog") {
-    ChangelogView(entries: [
-        ChangelogEntry(version: "1.2.0", date: .now, items: [
-            .added("Live Activities on the home screen"),
-            .changed("Faster sync"),
-            .fixed("Crash on launch under iOS 18.0"),
-        ]),
-        ChangelogEntry(version: "1.1.0", items: [
-            .added("Widget"),
-            .note("First public beta."),
-        ]),
-    ])
+enum ReleaseNotes {
+    static let all: [ReleaseNote] = [
+        ReleaseNote(
+            build: 45, version: "1.2.0", date: "2026-09-02",   // ISO; nil hides the date
+            changes: [                                          // + added / > changed / ~ fixed / * note
+                "+ Live Activities on the home screen",
+                "~ Fixed a crash on launch under iOS 18.0",
+            ],
+            highlights: [                                       // [] = don't interrupt for this build
+                WhatsNewCard(symbol: "bolt.fill", title: "Live Activities", subtitle: "From the lock screen."),
+            ]
+        ),
+    ]
 }
 ```
+`build` is the identity and the cadence key — unique and strictly increasing. SF Symbol names for `symbol`, not asset names.
+
+What's-new (one-shot post-update sheet, gated on the build number). `WhatsNewGate` owns the whole cadence — skipped-build catch-up, downgrades, fresh installs. Never reimplement it:
+```swift
+@State private var highlights: WhatsNewHighlights?
+private let gate = WhatsNewGate()   // already shipped a sheet? pass lastSeenBuildKey: your existing key
+
+.task {
+    let build = WhatsNewGate.currentBuild
+    guard hasCompletedOnboarding else { gate.seed(currentBuild: build); return }
+    guard let build, let cards = gate.highlightsForLaunch(currentBuild: build, notes: ReleaseNotes.all)
+    else { return }
+    gate.markPresented(build: build)   // mark even when cards is empty — state must converge
+    guard !cards.isEmpty else { return }
+    highlights = WhatsNewHighlights(cards: cards)
+}
+.sheet(item: $highlights) { highlights in
+    WhatsNewView(cards: highlights.cards, headerSymbol: "sparkles") { self.highlights = nil }
+}
+```
+Return contract: `nil` = present nothing, mark nothing. `[]` = mark presented, show nothing. Non-empty = mark presented, show the sheet.
+
+Changelog (multi-release Settings screen — distinct from the one-shot `WhatsNewView`, same notes):
+```swift
+NavigationLink("What's New") {
+    ChangelogView(notes: ReleaseNotes.all)
+}
+```
+
+Branding both views — PASKit owns layout, spacing and animation; the app supplies chrome through chainable slots. Wrap `config.content`, never rebuild it:
+```swift
+WhatsNewView(cards: highlights.cards) { self.highlights = nil }
+    .header { _ in Image(systemName: "dumbbell.fill").foregroundStyle(.brandGradient) }
+    .cardContainer { config in BrandCard { config.content } }
+    .continueButton { config in BrandButton(config.title, action: config.action) }
+    .background { BrandBackground() }
+
+ChangelogView(notes: ReleaseNotes.all)
+    .entryContainer { config in BrandCard { config.content } }
+```
+Accent colour otherwise comes from `.tint`. Strings are rendered verbatim — PASKit ships no string catalog, so pass already-localized text.
 
 Feedback prompt — two-stage prompt that opens `FeedbackSheet` on accept. PASKit owns the form, the app owns the transport (the `onSubmit` closure):
 ```swift

@@ -18,8 +18,10 @@ Sources/PASKitLifecycle/
 ├── Feedback/      FeedbackPayload.swift, FeedbackSheet.swift,
 │                  View+PresentAppFeedback.swift, MailComposerView.swift
 ├── Update/        VersionCheckManager.swift, AppUpdateView.swift
-├── WhatsNew/      WhatsNewCard.swift, WhatsNewCardResultBuilder.swift, WhatsNewView.swift
-├── Changelog/     ChangelogItem.swift, ChangelogEntry.swift, ChangelogView.swift
+├── WhatsNew/      WhatsNewCard.swift, WhatsNewCardResultBuilder.swift, WhatsNewView.swift,
+│                  WhatsNewSlots.swift, WhatsNewGate.swift, WhatsNewHighlights.swift
+├── Changelog/     ReleaseNote.swift, ChangelogItem.swift, ChangelogView.swift,
+│                  ChangelogSlots.swift
 ├── Loading/       DefaultLoadingView.swift, View+Loading.swift
 ├── LiquidGlass/   PASGlass.swift, PASGlassButtonVariant.swift, View+PasGlass.swift,
 │                  View+PasConcentricClip.swift
@@ -47,14 +49,19 @@ Sources/PASKitLifecycle/
 - `AppUpdateView` — SwiftUI view presenting the update prompt. System styling, `.borderedProminent` "Update App" button. Self-sets `.presentationDetents([.medium])` so `.sheet(item:)` apps get the right height automatically; drag indicator visible when dismissible. `forceUpdate: Bool = false` controls dismissibility — reserve `true` for security releases.
 
 ### WhatsNew — ✅ built
-- `WhatsNewView` — declarative card-list view using `@WhatsNewCardResultBuilder` with a staggered `blurSlide` entrance. Strings (`appName`, `title`, `footerMessage`, `continueButtonTitle`) parameterised; cards take SF Symbol names. Styling via `.tint`, `.primary`, `.secondary`.
+The one-shot post-update sheet and the cadence that decides when it is due. Extracted from two shipped apps that had carried near-identical copies.
+- `WhatsNewGate` — `@MainActor struct`. Decides whether the sheet is due from the build number, and collects the highlights for every build the user skipped, newest build first. Three-way return contract: `nil` = present nothing, mark nothing; `[]` = the build advanced but nothing was authored, so mark presented and show nothing (state converges instead of re-checking forever); non-empty = mark presented and show the sheet. Downgrades keep the stored maximum. `seed(currentBuild:)` records a fresh install's build during onboarding so finishing onboarding in-session can never trigger the sheet. `static currentBuild` reads `Int(AppInfo.build)`.
+  - **The `UserDefaults` key is an init parameter, not a constant** — it is installed-user state, so an app that already shipped a what's-new sheet must pass the key it shipped with or every user sees the sheet replay. `legacyVersionKey` covers migration from an older `CFBundleShortVersionString`-gated sheet: such an install is treated as "has seen nothing" and catches up, and the legacy key is retired only by `markPresented`, so a kill before presentation retries next launch.
+  - Build-number gating is deliberate: it is the only cadence that shows TestFlight testers anything. "Don't interrupt for a patch" lives in authoring discipline — ship `highlights: []` for patch builds and the gate absorbs them silently. No gate change is ever needed.
+- `WhatsNewHighlights` — the `.sheet(item:)` presentation value. Carrying the cards *as* the value makes the empty-sheet race (SwiftUI capturing `[]` before the same-transaction write lands) unrepresentable.
+- `WhatsNewView` — the sheet. PASKit owns layout, spacing and the staggered `blurSlide` entrance; the sheet stays inert until the footer lands so the CTA cannot be tapped mid-entrance. Strings (`title`, `headerSymbol`, `footerMessage`, `continueButtonTitle`) parameterised and rendered verbatim. Three chainable branding slots — `.header { }`, `.cardContainer { }`, `.continueButton { }` — take the app's chrome; the app applies its own background at the call site. Accent otherwise via `.tint`.
 - `WhatsNewCard` — one feature card (symbol + title + subtitle).
-- `WhatsNewCardResultBuilder` — declarative card builder.
+- `WhatsNewCardResultBuilder` — declarative card builder, for cards written inline.
 
 ### Changelog — ✅ built
-- `ChangelogView` — multi-version changelog list for Settings (distinct from `WhatsNewView`'s single-release sheet). Section header = `v{version}` + optional formatted date.
-- `ChangelogEntry` — one released version's record (`version`, `date`, `[ChangelogItem]`).
-- `ChangelogItem` — `.added` / `.changed` / `.fixed` / `.note`, rendered with SF Symbols (`plus.circle`, `arrow.triangle.2.circlepath`, `wrench.adjustable`, `circle`) plus `.tint` accent. Resolves bullet-list and `+/~/*` prefix variants from prior apps into one typed shape.
+- `ReleaseNote` — the single authoring source behind both changelog surfaces: `build`, `version`, `date`, the full `[ChangelogItem]` list, and the short `[WhatsNewCard]` highlights. `build` is the identity, the sort key, and `WhatsNewGate`'s cadence key, so builds must be unique and strictly increasing. Equality is `build` alone — `WhatsNewCard` carries a per-instance `UUID`, so field-wise equality would never hold. A `date:` string convenience parses ISO `"yyyy-MM-dd"` at noon UTC (so rendering west of UTC cannot roll the day back) and degrades to `nil` on a typo rather than trapping.
+- `ChangelogView` — scrolling multi-release list for Settings (distinct from `WhatsNewView`'s single-release sheet). One block per release, newest first in the order supplied — PASKit does not sort. `v{version} ({build})` header, "Latest" badge on the first entry (`latestBadgeTitle: nil` hides it), optional localized date. One branding slot, `.entryContainer { }`, for the app's card surface.
+- `ChangelogItem` — `.added` / `.changed` / `.fixed` / `.note`, rendered with SF Symbols (`plus.circle.fill`, `arrow.triangle.2.circlepath`, `wrench.adjustable.fill`, `checkmark.circle.fill`) plus `.tint` accent. `init(prefixed:)` resolves the `+` / `>` / `~` / `*` prefix vocabulary from prior apps into the typed shape; an unmarked line degrades to `.note` carrying the whole string rather than dropping content.
 
 ### Loading — ✅ built
 - `View.loading(isPresented:message:)` (system-default `ProgressView` + optional caption) and `View.loading(isPresented:content:)` (custom view). Both render a centred card over a dimmed backdrop with a fade transition, blocking underlying interaction.
