@@ -2,38 +2,78 @@
 //  ChangelogView.swift
 //  PASKitLifecycle
 //
-//  Multi-version changelog list for Settings. Distinct from `WhatsNewView`,
-//  which is a single-release card sheet shown once after an update. Apps
-//  supply a `[ChangelogEntry]` (newest first); rendering, sectioning and
-//  kind icons are PASKit's.
+//  The retrospective multi-release changelog, for a Settings sub-screen. Distinct
+//  from `WhatsNewView`, which is the one-shot card sheet shown once after an
+//  update — both read the same `[ReleaseNote]`. Apps supply the releases (newest
+//  first); layout, sectioning and kind icons are PASKit's, with one slot for the
+//  app's own card surface.
 //
 
 import SwiftUI
 
-/// A `List`-backed changelog view. Newest first. Each entry is one section;
-/// each item renders the kind icon + text. Icons resolve to SF Symbols and
-/// use `.tint` for accent — apps style at the call site.
+/// A scrolling changelog. One block per release, newest first, in the order
+/// supplied — PASKit does not sort.
+///
+/// ```swift
+/// NavigationLink("What's New") {
+///     ChangelogView(notes: ReleaseNotes.all)
+///         .entryContainer { config in BrandCard { config.content } }
+/// }
+/// ```
+///
+/// Accent colour comes from `.tint`; the app owns the background, applied at the
+/// call site with `.background { }`.
 public struct ChangelogView: View {
 
-    public let entries: [ChangelogEntry]
-    public let title: String
+    // MARK: - Content
 
-    public init(entries: [ChangelogEntry], title: String = "Changelog") {
-        self.entries = entries
+    private let notes: [ReleaseNote]
+    private let title: String
+    private let latestBadgeTitle: String?
+
+    // MARK: - Branding Slot
+
+    private var entrySlot: ((ChangelogEntryConfiguration) -> AnyView)?
+
+    // MARK: - Initialization
+
+    /// - Parameters:
+    ///   - notes: The releases, newest build first.
+    ///   - title: Navigation title. Already localized.
+    ///   - latestBadgeTitle: Badge shown beside the first release. `nil` hides it.
+    public init(
+        notes: [ReleaseNote],
+        title: String = "What's New",
+        latestBadgeTitle: String? = "Latest"
+    ) {
+        self.notes = notes
         self.title = title
+        self.latestBadgeTitle = latestBadgeTitle
     }
 
+    // MARK: - Slot
+
+    /// Wraps each stock release block in the app's own card surface. Wrap
+    /// `configuration.content`; do not rebuild it.
+    public func entryContainer<Content: View>(
+        @ViewBuilder _ builder: @escaping (ChangelogEntryConfiguration) -> Content
+    ) -> ChangelogView {
+        var copy = self
+        copy.entrySlot = { AnyView(builder($0)) }
+        return copy
+    }
+
+    // MARK: - Body
+
     public var body: some View {
-        List {
-            ForEach(entries) { entry in
-                Section {
-                    ForEach(Array(entry.items.enumerated()), id: \.offset) { _, item in
-                        row(for: item)
-                    }
-                } header: {
-                    header(for: entry)
+        ScrollView(.vertical) {
+            LazyVStack(spacing: 16) {
+                ForEach(notes) { note in
+                    entry(for: note)
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
         }
         .navigationTitle(title)
         #if os(iOS)
@@ -41,43 +81,82 @@ public struct ChangelogView: View {
         #endif
     }
 
+    // MARK: - Entry
+
     @ViewBuilder
-    private func header(for entry: ChangelogEntry) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text("v\(entry.version)")
+    private func entry(for note: ReleaseNote) -> some View {
+        let isLatest = note == notes.first
+        let configuration = ChangelogEntryConfiguration(
+            note: note,
+            isLatest: isLatest,
+            content: .init(stock: AnyView(stockEntry(note, isLatest: isLatest)))
+        )
+        if let entrySlot {
+            entrySlot(configuration)
+        } else {
+            configuration.content
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.background.secondary, in: .rect(cornerRadius: 16, style: .continuous))
+        }
+    }
+
+    private func stockEntry(_ note: ReleaseNote, isLatest: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            header(for: note, isLatest: isLatest)
+            ForEach(Array(note.items.enumerated()), id: \.offset) { _, item in
+                row(for: item)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func header(for note: ReleaseNote, isLatest: Bool) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(note.displayVersion)
                 .font(.headline)
-                .foregroundStyle(.tint)
-            Spacer()
-            if let date = entry.date {
-                Text(date, style: .date)
+
+            if isLatest, let latestBadgeTitle {
+                Text(latestBadgeTitle)
+                    .font(.caption2.weight(.semibold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(.tint, in: .capsule)
+                    .foregroundStyle(.background)
+            }
+
+            Spacer(minLength: 8)
+
+            if let date = note.date {
+                Text(date, format: .dateTime.month(.abbreviated).day().year())
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
     }
 
-    @ViewBuilder
     private func row(for item: ChangelogItem) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: symbol(for: item))
-                .font(.subheadline)
+                .font(.caption)
                 .foregroundStyle(.tint)
                 .frame(width: 18, alignment: .center)
-                .padding(.top, 2)
+                .padding(.top, 3)
                 .accessibilityLabel(accessibilityLabel(for: item))
             Text(item.text)
                 .font(.subheadline)
-                .foregroundStyle(.primary)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
     private func symbol(for item: ChangelogItem) -> String {
         switch item {
-        case .added: return "plus.circle"
+        case .added: return "plus.circle.fill"
         case .changed: return "arrow.triangle.2.circlepath"
-        case .fixed: return "wrench.adjustable"
-        case .note: return "circle"
+        case .fixed: return "wrench.adjustable.fill"
+        case .note: return "checkmark.circle.fill"
         }
     }
 

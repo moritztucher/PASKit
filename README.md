@@ -48,7 +48,7 @@ One Swift package, one library product per module — an app imports only what i
 | Module | Status | Purpose | Spec |
 |--------|--------|---------|------|
 | `PASKitCore` | Built | App + device metadata, networking, reachability, keychain, logging, haptics, observable settings, styling mechanisms, calendar math + durations, streak engine, App Group storage | [docs/PASKitCore.md](docs/PASKitCore.md) |
-| `PASKitLifecycle` | Built | Rate prompt, version check, what's-new, changelog, feedback form, app-info footer, Liquid Glass, onboarding engine, dev-menu scaffold, toasts, progress ring | [docs/PASKitLifecycle.md](docs/PASKitLifecycle.md) |
+| `PASKitLifecycle` | Built | Rate prompt, version check, what's-new sheet + build-number gate, changelog, feedback form, app-info footer, Liquid Glass, onboarding engine, dev-menu scaffold, toasts, progress ring | [docs/PASKitLifecycle.md](docs/PASKitLifecycle.md) |
 | `PASKitAnalytics` | Built | Thin PostHog facade — generic capture surface, app owns the vocabulary | [docs/PASKitAnalytics.md](docs/PASKitAnalytics.md) |
 | `PASKitPurchases` | Built | RevenueCat facade — entitlements, offerings/products, purchase + restore, paywall logic layer (pricing math, `PASPaywallFlow`); app owns paywall UI + IDs | [docs/PASKitPurchases.md](docs/PASKitPurchases.md) |
 | `PASKitNotifications` | Built | UNUserNotificationCenter facade — observable authorization, schedule/cancel, tap routing, daily-reminder sugar; app owns policy + copy | [docs/PASKitNotifications.md](docs/PASKitNotifications.md) |
@@ -86,20 +86,27 @@ SomeView().presentAppRating(
     askLaterCondition: { await sessions.count >= 14 }
 )
 
-// One-shot post-update sheet
-WhatsNewView(appName: "MyApp", title: "What's New") {
-    WhatsNewCard(symbol: "star.fill", title: "X", subtitle: "Y")
-    WhatsNewCard(symbol: "bolt.fill", title: "A", subtitle: "B")
-} onContinue: { dismiss() }
+// Author each release once — drives both changelog surfaces
+let notes = [
+    ReleaseNote(
+        build: 45, version: "1.2.0", date: "2026-09-02",
+        changes: ["+ Live Activities", "~ Fixed a crash on launch"],
+        highlights: [WhatsNewCard(symbol: "bolt.fill", title: "Live Activities", subtitle: "From the lock screen.")]
+    )
+]
 
-// Multi-version Settings screen
-ChangelogView(entries: [
-    ChangelogEntry(version: "1.2.0", date: .now, items: [
-        .added("Live Activities on the home screen"),
-        .changed("Faster sync"),
-        .fixed("Crash on launch under iOS 18.0"),
-    ])
-])
+// One-shot post-update sheet, gated on the build number
+let gate = WhatsNewGate()
+if let build = WhatsNewGate.currentBuild,
+   let cards = gate.highlightsForLaunch(currentBuild: build, notes: notes) {
+    gate.markPresented(build: build)
+    if !cards.isEmpty { highlights = WhatsNewHighlights(cards: cards) }
+}
+WhatsNewView(cards: highlights.cards, headerSymbol: "sparkles") { self.highlights = nil }
+    .continueButton { config in BrandButton(config.title, action: config.action) }
+
+// Multi-release Settings screen, same notes
+ChangelogView(notes: notes)
 ```
 
 **PASKitAnalytics** — PostHog facade, app owns vocabulary:
