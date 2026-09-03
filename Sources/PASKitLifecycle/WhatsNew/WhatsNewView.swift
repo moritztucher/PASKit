@@ -195,7 +195,6 @@ public struct WhatsNewView: View {
         } else if let headerSymbol {
             Image(systemName: headerSymbol)
                 .font(.system(size: 48))
-                .symbolVariant(.fill)
                 .foregroundStyle(.tint)
         }
     }
@@ -225,7 +224,6 @@ public struct WhatsNewView: View {
         HStack(alignment: .top, spacing: 16) {
             Image(systemName: card.symbol)
                 .font(.title2)
-                .symbolVariant(.fill)
                 .foregroundStyle(.tint)
                 .frame(width: 40, height: 40)
                 .background(AnyShapeStyle(.tint).opacity(0.12), in: .rect(cornerRadius: 10, style: .continuous))

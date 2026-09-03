@@ -43,7 +43,7 @@ WhatsNewView(cards: highlights.cards) { self.highlights = nil }
     .background { BrandBackground() }
 ```
 
-Wrap `config.content`; never rebuild it. Accent colour otherwise comes from `.tint`. Strings are rendered verbatim — PASKit ships no string catalog, so pass already-localized text.
+Wrap `config.content`; never rebuild it. Accent colour otherwise comes from `.tint`. Symbols render exactly as named — PASKit forces no variant, so author `star.fill` when you want the filled glyph. Strings are rendered verbatim — PASKit ships no string catalog, so pass already-localized text.
 
 ## Dismissal
 
