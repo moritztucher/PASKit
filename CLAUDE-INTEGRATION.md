@@ -187,6 +187,14 @@ private let gate = WhatsNewGate()   // already shipped a sheet? pass lastSeenBui
 ```
 Return contract: `nil` = present nothing, mark nothing. `[]` = mark presented, show nothing. Non-empty = mark presented, show the sheet.
 
+The same sheet also serves a manual "What's New" row in Settings — pass `isDismissible: true` there (default is `false`, so the one-shot post-update sheet must be acknowledged via the CTA) and pair it with `.presentationDragIndicator(.visible)`:
+```swift
+.sheet(isPresented: $showWhatsNew) {
+    WhatsNewView(cards: ReleaseHighlights.current, isDismissible: true) { showWhatsNew = false }
+        .presentationDragIndicator(.visible)
+}
+```
+
 Changelog (multi-release Settings screen — distinct from the one-shot `WhatsNewView`, same notes):
 ```swift
 NavigationLink("What's New") {

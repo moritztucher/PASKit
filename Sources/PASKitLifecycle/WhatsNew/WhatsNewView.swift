@@ -34,6 +34,7 @@ public struct WhatsNewView: View {
     private let headerSymbol: String?
     private let footerMessage: String?
     private let continueButtonTitle: String
+    private let isDismissible: Bool
     private let cards: [WhatsNewCard]
     private let onContinue: () -> Void
 
@@ -60,6 +61,14 @@ public struct WhatsNewView: View {
     ///     ``header(_:)`` slot is supplied.
     ///   - footerMessage: Optional line above the CTA.
     ///   - continueButtonTitle: CTA title.
+    ///   - isDismissible: Whether swipe-to-dismiss works. Defaults to `false` —
+    ///     the post-update sheet is shown once and should be acknowledged, so the
+    ///     CTA is the only way out. Pass `true` when the user opened the sheet
+    ///     deliberately (a "What's New" row in Settings, say), where suppressing
+    ///     the standard sheet gesture is just friction. Pair `true` with
+    ///     `.presentationDragIndicator(.visible)` at the call site; pairing a
+    ///     visible grabber with the default `false` shows a control that does
+    ///     nothing.
     ///   - onContinue: Dismissal. The sheet does not dismiss itself.
     public init(
         cards: [WhatsNewCard],
@@ -67,6 +76,7 @@ public struct WhatsNewView: View {
         headerSymbol: String? = nil,
         footerMessage: String? = nil,
         continueButtonTitle: String = "Continue",
+        isDismissible: Bool = false,
         onContinue: @escaping () -> Void
     ) {
         self.cards = cards
@@ -74,6 +84,7 @@ public struct WhatsNewView: View {
         self.headerSymbol = headerSymbol
         self.footerMessage = footerMessage
         self.continueButtonTitle = continueButtonTitle
+        self.isDismissible = isDismissible
         self.onContinue = onContinue
         self._animateCards = State(initialValue: Array(repeating: false, count: cards.count))
     }
@@ -84,6 +95,7 @@ public struct WhatsNewView: View {
         headerSymbol: String? = nil,
         footerMessage: String? = nil,
         continueButtonTitle: String = "Continue",
+        isDismissible: Bool = false,
         @WhatsNewCardResultBuilder cards: () -> [WhatsNewCard],
         onContinue: @escaping () -> Void
     ) {
@@ -93,6 +105,7 @@ public struct WhatsNewView: View {
             headerSymbol: headerSymbol,
             footerMessage: footerMessage,
             continueButtonTitle: continueButtonTitle,
+            isDismissible: isDismissible,
             onContinue: onContinue
         )
     }
@@ -167,7 +180,7 @@ public struct WhatsNewView: View {
             .padding(.bottom, 24)
             .blurSlide(animateFooter)
         }
-        .interactiveDismissDisabled()
+        .interactiveDismissDisabled(!isDismissible)
         .allowsHitTesting(animateFooter)
         .task { await animateSequence() }
     }
@@ -182,7 +195,6 @@ public struct WhatsNewView: View {
         } else if let headerSymbol {
             Image(systemName: headerSymbol)
                 .font(.system(size: 48))
-                .symbolVariant(.fill)
                 .foregroundStyle(.tint)
         }
     }
@@ -212,7 +224,6 @@ public struct WhatsNewView: View {
         HStack(alignment: .top, spacing: 16) {
             Image(systemName: card.symbol)
                 .font(.title2)
-                .symbolVariant(.fill)
                 .foregroundStyle(.tint)
                 .frame(width: 40, height: 40)
                 .background(AnyShapeStyle(.tint).opacity(0.12), in: .rect(cornerRadius: 10, style: .continuous))
