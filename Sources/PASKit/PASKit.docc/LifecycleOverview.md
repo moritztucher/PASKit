@@ -36,23 +36,41 @@ ContentView().presentAppFeedback(
 
 `FeedbackSheet` ships the category picker, name field, email field, message field, and the hero copy — all configurable. The `onSubmit` closure is the app's transport (email, HTTP, webhook). PASKit owns the form; the app owns delivery.
 
-## What's-new vs. changelog
+## Release notes: one source, two surfaces
 
-Two different surfaces for two different moments:
-
-- `WhatsNewView` — one-shot post-update card sheet (presented once after a version bump).
-- `ChangelogView` — multi-version list for Settings, with typed items (`.added`, `.changed`, `.fixed`, `.note`).
+A release is authored once, as a `ReleaseNote`. It carries both shapes — the full change list and the short highlight cards — so the two surfaces can never drift:
 
 ```swift
-NavigationLink("Changelog") {
-    ChangelogView(entries: [
-        ChangelogEntry(version: "1.2.0", date: .now, items: [
-            .added("Live Activities on the home screen"),
-            .fixed("Crash on launch under iOS 18.0"),
-        ]),
-    ])
-}
+let notes = [
+    ReleaseNote(
+        build: 45, version: "1.2.0", date: "2026-09-02",
+        changes: ["+ Live Activities on the home screen", "~ Fixed a crash on launch"],
+        highlights: [
+            WhatsNewCard(symbol: "bolt.fill", title: "Live Activities", subtitle: "From the lock screen."),
+        ]
+    ),
+]
 ```
+
+- `WhatsNewView` — the one-shot post-update card sheet, shown once after a build bump.
+- `ChangelogView` — the retrospective multi-release list for Settings, with typed items (`.added`, `.changed`, `.fixed`, `.note`).
+
+`WhatsNewGate` owns the cadence — including catching a user up on every build they skipped, and staying quiet on downgrades:
+
+```swift
+let gate = WhatsNewGate()
+if let build = WhatsNewGate.currentBuild,
+   let cards = gate.highlightsForLaunch(currentBuild: build, notes: notes) {
+    gate.markPresented(build: build)          // mark even when cards is empty
+    if !cards.isEmpty { highlights = WhatsNewHighlights(cards: cards) }
+}
+
+NavigationLink("What's New") { ChangelogView(notes: notes) }
+```
+
+A build whose `highlights` are empty is absorbed silently, so "don't interrupt for a patch" is an authoring choice, not a gate change.
+
+Both views take the app's chrome through chainable slots — `.header { }`, `.cardContainer { }`, `.continueButton { }`, `.entryContainer { }` — while PASKit keeps the layout and the entrance animation.
 
 ## Update gate
 

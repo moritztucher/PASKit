@@ -92,6 +92,13 @@ let package = Package(
             name: "PASKitCoreTests",
             dependencies: ["PASKitCore"]
         ),
+        // Covers PASKitLifecycle's non-UI logic — the What's New cadence gate and
+        // the release-note authoring conveniences. Foundation-only, so these run
+        // on the macOS CI host without a simulator.
+        .testTarget(
+            name: "PASKitLifecycleTests",
+            dependencies: ["PASKitLifecycle"]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )
