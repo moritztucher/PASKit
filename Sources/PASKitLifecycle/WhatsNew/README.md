@@ -44,3 +44,7 @@ WhatsNewView(cards: highlights.cards) { self.highlights = nil }
 ```
 
 Wrap `config.content`; never rebuild it. Accent colour otherwise comes from `.tint`. Strings are rendered verbatim — PASKit ships no string catalog, so pass already-localized text.
+
+## Dismissal
+
+The sheet defaults to `isDismissible: false`: shown once after an update, it should be acknowledged, so the CTA is the only way out. Pass `isDismissible: true` when the user opened it deliberately — a "What's New" row in Settings — where suppressing the standard sheet gesture is only friction. Pair `true` with `.presentationDragIndicator(.visible)`; a visible grabber alongside the default `false` shows a control that does nothing.
