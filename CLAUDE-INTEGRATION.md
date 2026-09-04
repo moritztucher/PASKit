@@ -108,6 +108,7 @@ let config = PASStreakConfig(freezeCap: 2, freeFreezeInterval: 30 * 24 * 3600)  
 let (rolled, outcome) = PASStreakEngine.rolledOver(state, config: config)
 if outcome.freezeConsumed { showStreakSavedNotice() }
 if outcome.streakDidReset { /* optional empathy copy */ }
+if outcome.gapDays >= 7, outcome.streakLost > 0 { showWelcomeBack(lost: outcome.streakLost) }
 
 let (next, firstToday) = PASStreakEngine.recordingActivity(rolled, config: config)
 if firstToday { Haptics.play(.celebration); checkMilestones(next.streak) }  // milestones stay app vocabulary

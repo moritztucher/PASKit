@@ -5,7 +5,7 @@ Pure streak / day-rollover engine — value-in/value-out, so persistence stays a
 ## API
 
 - `PASStreakState` — `Codable` value (`streak`, raise-only `longestStreak`, `lastActiveDay`, `freezeBalance`, `lastFreezeGrantAt`).
-- `PASStreakEngine.rolledOver(_:today:calendar:config:)` — day rollover in the proven order: freeze-consume → streak roll → free grant. Returns `PASStreakRolloverOutcome` (`freezeConsumed` / `freezeGranted` / `streakDidReset`).
+- `PASStreakEngine.rolledOver(_:today:calendar:config:)` — day rollover in the proven order: freeze-consume → streak roll → free grant. Returns `PASStreakRolloverOutcome` (`freezeConsumed` / `freezeGranted` / `streakDidReset` / `streakLost` / `gapDays`).
 - `PASStreakEngine.recordingActivity(_:at:calendar:config:)` — first-activity-today increment + `lastActiveDay` stamp; same-day repeats are no-ops.
 - `PASStreakConfig` — `freezeCap` / `freeFreezeInterval`, both default-off.
 
@@ -16,6 +16,7 @@ let config = PASStreakConfig(freezeCap: 2, freeFreezeInterval: 30 * 24 * 3600)  
 
 let (rolled, outcome) = PASStreakEngine.rolledOver(state, config: config)
 if outcome.freezeConsumed { showStreakSavedNotice() }
+if outcome.gapDays >= 7, outcome.streakLost > 0 { showWelcomeBack(lost: outcome.streakLost) }
 
 let (next, firstToday) = PASStreakEngine.recordingActivity(rolled, config: config)
 if firstToday { checkMilestones(next.streak) }

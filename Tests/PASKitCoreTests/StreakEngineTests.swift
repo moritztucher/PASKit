@@ -172,6 +172,75 @@ struct StreakEngineTests {
         #expect(next.freezeBalance == 1)
     }
 
+    // MARK: - Lapse reporting
+
+    @Test("A multi-day reset reports the streak lost and the gap")
+    func multiDayResetReportsLossAndGap() {
+        let state = PASStreakState(streak: 12, lastActiveDay: startOfDay(d1))
+        let (next, outcome) = PASStreakEngine.rolledOver(state, today: utcDate(2026, 1, 10), calendar: utcCalendar)
+        #expect(outcome.streakDidReset)
+        #expect(outcome.streakLost == 12)
+        #expect(outcome.gapDays == 9)
+        #expect(next.streak == 0)
+    }
+
+    @Test("A surviving streak reports no loss")
+    func survivingStreakReportsNoLoss() {
+        let state = PASStreakState(streak: 5, lastActiveDay: startOfDay(d2))
+        let (_, outcome) = PASStreakEngine.rolledOver(state, today: d3, calendar: utcCalendar)
+        #expect(outcome.streakLost == 0)
+        #expect(outcome.gapDays == 1)
+        #expect(!outcome.streakDidReset)
+    }
+
+    @Test("A consumed freeze reports the pre-freeze gap and no loss")
+    func consumedFreezeReportsPreFreezeGapAndNoLoss() {
+        let config = PASStreakConfig(freezeCap: 3)
+        let state = PASStreakState(streak: 5, lastActiveDay: startOfDay(d1), freezeBalance: 2)
+        let (_, outcome) = PASStreakEngine.rolledOver(state, today: d3, calendar: utcCalendar, config: config)
+        #expect(outcome.freezeConsumed)
+        #expect(outcome.gapDays == 2)
+        #expect(outcome.streakLost == 0)
+    }
+
+    @Test("No activity ever reports zero gap and no loss")
+    func noActivityReportsZeroGapAndNoLoss() {
+        let (_, outcome) = PASStreakEngine.rolledOver(PASStreakState(), today: d3, calendar: utcCalendar)
+        #expect(outcome.gapDays == 0)
+        #expect(outcome.streakLost == 0)
+        #expect(!outcome.streakDidReset)
+    }
+
+    @Test("A backwards clock reports zero gap")
+    func backwardsClockReportsZeroGap() {
+        let state = PASStreakState(streak: 3, lastActiveDay: startOfDay(d3))
+        let (_, outcome) = PASStreakEngine.rolledOver(state, today: d1, calendar: utcCalendar)
+        #expect(outcome.gapDays == 0)
+        // Documents the invariant without asserting the reset policy itself —
+        // a backwards clock already resets the streak (pre-existing engine
+        // behaviour, left as-is).
+        #expect(outcome.streakLost == (outcome.streakDidReset ? 3 : 0))
+    }
+
+    @Test("The gap is reported even when the streak is already zero")
+    func gapReportedAtZeroStreak() {
+        let state = PASStreakState(streak: 0, lastActiveDay: startOfDay(d1))
+        let (_, outcome) = PASStreakEngine.rolledOver(state, today: utcDate(2026, 1, 10), calendar: utcCalendar)
+        #expect(outcome.gapDays == 9)
+        #expect(outcome.streakLost == 0)
+        #expect(!outcome.streakDidReset)
+    }
+
+    @Test("Re-rolling after a reset reports no second loss")
+    func reRollingAfterResetReportsNoSecondLoss() {
+        let state = PASStreakState(streak: 12, lastActiveDay: startOfDay(d1))
+        let (next, _) = PASStreakEngine.rolledOver(state, today: utcDate(2026, 1, 10), calendar: utcCalendar)
+        let (_, outcome) = PASStreakEngine.rolledOver(next, today: utcDate(2026, 1, 10), calendar: utcCalendar)
+        #expect(outcome.streakLost == 0)
+        #expect(!outcome.streakDidReset)
+        #expect(outcome.gapDays == 9)
+    }
+
     // MARK: - State
 
     @Test("State round-trips through Codable")
