@@ -126,9 +126,7 @@ public final class PASNotifications {
         if let subtitle = request.subtitle {
             content.subtitle = subtitle
         }
-        if request.sound {
-            content.sound = .default
-        }
+        content.sound = request.sound.unSound
         if let badge = request.badge {
             content.badge = NSNumber(value: badge)
         }

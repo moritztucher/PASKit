@@ -6,7 +6,8 @@ Thin facade over `UNUserNotificationCenter`. PASKit owns the mechanism (delegate
 
 - `PASNotifications` — `@MainActor @Observable` singleton (`PASNotifications.shared`). Observable `authorizationStatus` (+ `isAuthorized`), `configure` installs the notification-center delegate, `onResponse` registers the tap router, `requestAuthorization` / `schedule` / `fireTest` / `cancel` / `cancelAll` / `pendingIDs` / `setBadgeCount`.
 - `PASNotificationsConfig` — config struct passed to `configure` (`foregroundPresentation` options; default `[.banner, .sound]`).
-- `PASNotificationRequest` — Sendable description of a local notification (`id`, `title`, `body`, `subtitle`, `sound`, `badge`, `userInfo` routing payload, `trigger`).
+- `PASNotificationRequest` — Sendable description of a local notification (`id`, `title`, `body`, `subtitle`, `sound: PASNotificationSound` (`.default` / `.silent` / `.named("file.wav")`; Bool literals still accepted), `badge`, `userInfo` routing payload, `trigger`).
+- `PASNotificationSound` — `.default` (system sound), `.silent`, `.named(String)` (a bundled `aiff`/`wav`/`caf` clip, ≤ 30s, by filename). `ExpressibleByBooleanLiteral`: `true` → `.default`, `false` → `.silent`.
 - `PASNotificationTrigger` — `.interval(_:repeats:)`, `.calendar(_:repeats:)`, `.at(Date)` one-shot sugar, `.dailyAt(hour:minute:)` / `.dailyAt(_ date:)` daily-reminder sugar (repeating calendar at a wall-clock time; the `Date` overload extracts hour/minute from the user's picked time).
 - `fireTest(_:after:)` — fire a notification's content now (≥1s) under a `test.<id>` identifier so it never replaces the real pending instance — the DEBUG dev-menu "test this notification" button.
 - `PASNotificationResponse` — what `onResponse` receives (`notificationID`, `actionID`, `userInfo`, `isDefaultTap`).
@@ -32,6 +33,7 @@ try await PASNotifications.shared.schedule(PASNotificationRequest(
     id: "streak-protection",
     title: "Your streak ends at midnight",
     body: "4 hours left — one quick lesson keeps it alive.",
+    sound: .named("rest_complete.wav"),  // bundled clip; default is the system sound
     userInfo: ["destination": "path"],
     trigger: .calendar(DateComponents(hour: 20), repeats: false)
 ))

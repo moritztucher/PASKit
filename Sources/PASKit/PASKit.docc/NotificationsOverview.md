@@ -36,6 +36,8 @@ PASNotifications.shared.cancel(ids: ["streak.reminder"])
 
 Re-using an `id` replaces that pending request, so schedule idempotently. `fireTest(_:)` fires a request's content almost immediately under a `test.<id>` identifier — the "test this notification now" button for a DEBUG dev menu.
 
+`sound` takes a `PASNotificationSound` — `.default` (the system sound, the default), `.silent`, or `.named("file.wav")` for a bundled clip ≤ 30s in the app's main bundle. Bool literals (`sound: true` / `sound: false`) still compile.
+
 ## Route taps
 
 ```swift
