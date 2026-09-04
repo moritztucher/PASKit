@@ -15,10 +15,10 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 | Module | Provides |
 |--------|----------|
 | `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`); haptics (`Haptics.play`, `View.hapticOnTap`); settings (`PASSettingsStore` + `@PASDefault` + `UserDefaultsStorable`); draft persistence (`PASDraft`); styling mechanisms (`Animation.respectingReducedMotion`, `View.pasAnimation`, `Color(light:dark:)`, `Font.pasScaled`, `PASFontRegistration`); calendar math + durations (`Date.pas…` helpers, `PASDurationFormat`); streak engine (`PASStreakState` + `PASStreakEngine` + `PASStreakConfig`); App Group storage (`PASAppGroupContainer` — store-engine-agnostic, no persistence dependency); pressable button style (`.buttonStyle(.pasPressable())`). |
-| `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)`, `View.presentAppFeedback(...)` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `View.pasGlass(...)` + `View.pasGlassButtonStyle(...)` (iOS 26 with pre-26 fallback), `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` + `WhatsNewGate` + `WhatsNewHighlights` (build-number-gated post-update sheet), `ChangelogView` (`ReleaseNote` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS), onboarding engine (`PASOnboardingFlow` + `View.pasOnboardingTransition` + `PASOnboardingProgressBar`), dev-menu scaffold (`View.pasDevelopmentOverlay` + `PASDevelopmentMenu`), toasts (`View.pasToast` + `PASToast`), progress ring (`PASProgressRing`). |
+| `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)` + `PASAppRatingKeys` / `PASAppRatingCopy`, `View.presentAppFeedback(...)` + `PASAppFeedbackKeys` / `PASAppFeedbackCopy` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `View.pasGlass(...)` + `View.pasGlassButtonStyle(...)` (iOS 26 with pre-26 fallback), `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` + `WhatsNewGate` + `WhatsNewHighlights` (build-number-gated post-update sheet), `ChangelogView` (`ReleaseNote` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS), onboarding engine (`PASOnboardingFlow` + `View.pasOnboardingTransition`), dev-menu scaffold (`View.pasDevelopmentOverlay` + `PASDevelopmentMenu`), toasts (`View.pasToast` + `PASToast`), progress ring + bar (`PASProgressRing`, `PASProgressBar`). |
 | `PASKitPurchases` | RevenueCat facade: `PASPurchases.shared.configure(...)` / `.customerInfo` (observable, stream-fed) / `.isEntitled` / `.offerings` / `.currentOffering` / `.offering(identifier:)` / `.products` / `.purchase(package/product)` → `PASPurchaseResult` / `.restorePurchases` / `.logIn` / `.logOut`. App owns entitlement + product IDs and the paywall UI. |
 | `PASKitAnalytics` | PostHog facade: `PASAnalytics.shared.setup(...)` / `.capture` / `.screen` / `.identify` / `.register` / `.reset` / `.optIn` / `.optOut` / `.flush` / `.isFeatureEnabled` / `.featureFlagPayload`. App owns event vocabulary as an extension on `PASAnalytics`. |
-| `PASKitNotifications` | Local-notification facade: `PASNotifications.shared.configure(...)` / `.authorizationStatus` + `.isAuthorized` (observable) / `.onResponse` (tap routing, cold-start buffered) / `.requestAuthorization` / `.schedule(PASNotificationRequest)` (triggers incl. `.dailyAt` sugar) / `.fireTest` / `.cancel(ids:)` / `.cancelAll` / `.pendingIDs` / `.setBadgeCount`. App owns scheduling policy, copy, identifiers, and navigation. |
+| `PASKitNotifications` | Local-notification facade: `PASNotifications.shared.configure(...)` / `.authorizationStatus` + `.isAuthorized` (observable) / `.onResponse` (tap routing, cold-start buffered) / `.requestAuthorization` / `.schedule(PASNotificationRequest)` (triggers incl. `.dailyAt` sugar; `sound: PASNotificationSound`) / `.fireTest` / `.cancel(ids:)` / `.cancelAll` / `.pendingIDs` / `.setBadgeCount`. App owns scheduling policy, copy, identifiers, and navigation. |
 | `PASKitSharing` | Share-card export: `PASShareCard.render` (SwiftUI→`UIImage`), `PASInstagramStories.share`/`.copySticker`, `PASPhotoLibrary.save`, `PASShareItems` + `PASActivitySheet` (sheet + imperative `present`), `PASScaledCardPreview` + `PASTransparencyCheckerboard`. App owns card designs, captions, fallback policy. |
 | `PASKit` (umbrella) | Re-exports every module — one dependency line, `import` modules individually. |
 
@@ -108,6 +108,7 @@ let config = PASStreakConfig(freezeCap: 2, freeFreezeInterval: 30 * 24 * 3600)  
 let (rolled, outcome) = PASStreakEngine.rolledOver(state, config: config)
 if outcome.freezeConsumed { showStreakSavedNotice() }
 if outcome.streakDidReset { /* optional empathy copy */ }
+if outcome.gapDays >= 7, outcome.streakLost > 0 { showWelcomeBack(lost: outcome.streakLost) }
 
 let (next, firstToday) = PASStreakEngine.recordingActivity(rolled, config: config)
 if firstToday { Haptics.play(.celebration); checkMilestones(next.streak) }  // milestones stay app vocabulary
@@ -140,6 +141,26 @@ SomeView().presentAppRating(
     askLaterCondition: { await sessions.count >= 14 }
 )
 ```
+Migrating an app that already shipped its own rate-prompt keys and copy — pass what it shipped with, or every installed user who resolved the prompt sees it again:
+```swift
+SomeView().presentAppRating(
+    initialCondition: { await sessions.count >= 7 },
+    askLaterCondition: { await sessions.count >= 14 },
+    keys: PASAppRatingKeys(isCompleted: "isRatingInteractionComplete", isInitialPromptShown: "isInitialPromptComplete"),
+    copy: PASAppRatingCopy(
+        initialTitle: "Enjoying \(AppInfo.displayName)?",
+        initialMessage: "Would you like to rate \(AppInfo.displayName) on the App Store?",
+        initialAccept: "Yes, Rate It!",
+        askLater: "Ask Later",
+        neverAsk: "Never Ask Again",
+        followUpTitle: "Enjoying \(AppInfo.displayName)?",
+        followUpMessage: "A quick rating helps us a lot.",
+        followUpAccept: "Rate Now",
+        followUpDecline: "No Thanks"
+    )
+)
+```
+`presentAppFeedback` takes the same `keys:` / `copy:` pair (`PASAppFeedbackKeys` / `PASAppFeedbackCopy`), for the same reason.
 
 Update check:
 ```swift
@@ -282,7 +303,7 @@ enum Step: String, Codable, Hashable { case welcome, units, permissions }
 @State private var flow = PASOnboardingFlow(steps: Step.allCases)
 
 VStack(spacing: 0) {
-    PASOnboardingProgressBar(progress: flow.progress)          // brand via .tint
+    PASProgressBar(progress: flow.progress)                    // brand via .tint
     stepContent(for: flow.current)                             // app's @ViewBuilder switch
         .pasOnboardingTransition(step: flow.current, direction: flow.direction)
     bottomBar                                                  // app's buttons → flow.advance() / flow.back()
@@ -337,13 +358,14 @@ PASFontRegistration.registerBundledFonts(named: ["BrushScript.ttf"])
 ```
 And from PASKitLifecycle's glass shims: `CoverImage().pasConcentricClip(fallbackRadius: 12)` — iOS 26 `ConcentricRectangle` with pre-26 `RoundedRectangle` fallback.
 
-Two brand-free UI primitives (colors come from `.tint`; the rest is mechanism — the full styled buttons/cards stay per-app, and prefer Apple's `ContentUnavailableView` for empty states):
+Three brand-free UI primitives (colors come from `.tint`; the rest is mechanism — the full styled buttons/cards stay per-app, and prefer Apple's `ContentUnavailableView` for empty states):
 ```swift
 import PASKitLifecycle
 PASProgressRing(progress: 0.75, lineWidth: 6) { Text("3/4").font(.caption.bold()) }.tint(.brand)
+PASProgressBar(progress: 0.4).tint(.brand)
 
 import PASKitCore
-Button("Start") { … }.buttonStyle(.pasPressable())                                  // scale + spring
+Button("Start") { … }.buttonStyle(.pasPressable())                                  // scale + spring (snaps under Reduce Motion)
 Button("Log") { … }.buttonStyle(.pasPressable(haptic: .selection,                   // + press haptic
                                               isHapticEnabled: settings.hapticsEnabled))
 ```
@@ -434,6 +456,7 @@ try await PASNotifications.shared.schedule(PASNotificationRequest(
     id: "streak-protection",
     title: "Your streak ends at midnight",
     body: "4 hours left — one quick lesson keeps it alive.",
+    sound: .named("rest_complete.wav"),  // bundled clip; default is the system sound
     userInfo: ["destination": "path"],
     trigger: .calendar(DateComponents(hour: 20), repeats: false)
 ))

@@ -27,6 +27,7 @@ PASKit owns the mechanism; each app owns its vocabulary: when to schedule, the c
 | `cancel(ids:)` / `cancelAll()` / `pendingIDs()` | Pending-request management. |
 | `setBadgeCount(_:)` | App-icon badge; `0` clears. |
 | `PASNotificationTrigger` | `.interval(_:repeats:)`, `.calendar(_:repeats:)` (e.g. `DateComponents(hour: 20)` for 8pm local), `.at(Date)` one-shot sugar, `.dailyAt(hour:minute:)` / `.dailyAt(_ date:)` daily-reminder sugar (repeating calendar at a wall-clock time; the `Date` overload extracts hour/minute from the user's picked time). |
+| `PASNotificationSound` | `.default` / `.silent` / `.named(file)` — bundled custom clips (≤ 30 s, main bundle). Bool literals map to default/silent. |
 
 ## Out of scope
 
@@ -42,6 +43,7 @@ PASKit owns the mechanism; each app owns its vocabulary: when to schedule, the c
 - **String-to-string `userInfo`.** The routing payload is `[String: String]` by design — small routing keys, not state. Non-string values on remote payloads are dropped at extraction.
 - **Stable identifiers as the contract.** Apps schedule with vocabulary ids (`"streak-protection"`); replace-on-reschedule + `cancel(ids:)` make scheduling idempotent, which is what calendar-shaped logic (streaks, daily reminders) needs.
 - **UserNotifications types pass through where natural.** `UNAuthorizationStatus`, `UNAuthorizationOptions`, `UNNotificationPresentationOptions` are not re-wrapped — this is a convenience wrapper, not a vendor abstraction (there is no vendor).
+- **Custom sounds are first-class** because a workout app's single-ding design depends on the notification and the in-app cue playing the *same* clip.
 
 ## Future work
 

@@ -4,7 +4,9 @@ Two-stage "rate the app" prompt over StoreKit's `requestReview`. Caller supplies
 
 ## API
 
-- `View.presentAppRating(initialCondition:askLaterCondition:)` — view modifier.
+- `View.presentAppRating(initialCondition:askLaterCondition:keys:copy:)` — view modifier.
+- `PASAppRatingKeys` — `UserDefaults` keys behind the one-shot state. `.standard` for new apps; pass the keys you already shipped if you're migrating a local rate prompt.
+- `PASAppRatingCopy` — alert copy per stage. `.standard` matches PASKit's shipped strings verbatim; strings are shown as-is, so pass `String(localized:)` to localise.
 
 ## Example
 
@@ -12,6 +14,17 @@ Two-stage "rate the app" prompt over StoreKit's `requestReview`. Caller supplies
 ContentView().presentAppRating(
     initialCondition: { await sessions.count >= 7 },
     askLaterCondition: { await sessions.count >= 14 }
+)
+```
+
+Migrating an app that already shipped its own keys and copy:
+
+```swift
+ContentView().presentAppRating(
+    initialCondition: { await sessions.count >= 7 },
+    askLaterCondition: { await sessions.count >= 14 },
+    keys: PASAppRatingKeys(isCompleted: "isRatingInteractionComplete", isInitialPromptShown: "isInitialPromptComplete"),
+    copy: PASAppRatingCopy(initialTitle: "Enjoying \(AppInfo.displayName)?", initialAccept: "Yes, Rate It!")
 )
 ```
 

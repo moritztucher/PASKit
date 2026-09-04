@@ -20,15 +20,25 @@ public extension View {
     ///     Return `true` to show the initial alert.
     ///   - askLaterCondition: Evaluated on appear after *Ask Later*. Return
     ///     `true` to show the second alert.
+    ///   - keys: `UserDefaults` keys backing the one-shot state. Defaults to
+    ///     `.standard`. An app that already shipped its own keys **must**
+    ///     pass them here, or every installed user sees the prompt replay.
+    ///   - copy: Alert copy per stage. Defaults to `.standard` — the copy
+    ///     PASKit has always shown. Pass app vocabulary (e.g. the app name)
+    ///     or localised strings to personalise it.
     @ViewBuilder
     func presentAppRating(
         initialCondition: @escaping () async -> Bool,
-        askLaterCondition: @escaping () async -> Bool
+        askLaterCondition: @escaping () async -> Bool,
+        keys: PASAppRatingKeys = .standard,
+        copy: PASAppRatingCopy = .standard
     ) -> some View {
         modifier(
             AppRatingModifier(
                 initialCondition: initialCondition,
-                askLaterCondition: askLaterCondition
+                askLaterCondition: askLaterCondition,
+                keys: keys,
+                copy: copy
             )
         )
     }
@@ -37,11 +47,25 @@ public extension View {
 private struct AppRatingModifier: ViewModifier {
     let initialCondition: () async -> Bool
     let askLaterCondition: () async -> Bool
+    let copy: PASAppRatingCopy
 
     @Environment(\.requestReview) private var requestReview
-    @AppStorage("paskit.appRating.isComplete") private var isCompleted = false
-    @AppStorage("paskit.appRating.isInitialPromptShown") private var isInitialPromptShown = false
+    @AppStorage private var isCompleted: Bool
+    @AppStorage private var isInitialPromptShown: Bool
     @State private var showAlert = false
+
+    init(
+        initialCondition: @escaping () async -> Bool,
+        askLaterCondition: @escaping () async -> Bool,
+        keys: PASAppRatingKeys,
+        copy: PASAppRatingCopy
+    ) {
+        self.initialCondition = initialCondition
+        self.askLaterCondition = askLaterCondition
+        self.copy = copy
+        _isCompleted = AppStorage(wrappedValue: false, keys.isCompleted)
+        _isInitialPromptShown = AppStorage(wrappedValue: false, keys.isInitialPromptShown)
+    }
 
     func body(content: Content) -> some View {
         content
@@ -54,24 +78,31 @@ private struct AppRatingModifier: ViewModifier {
                     showAlert = true
                 }
             }
-            .alert("Would you like to rate the app?", isPresented: $showAlert) {
-                Button(isInitialPromptShown ? "Yes!" : "Yes, Continue!") {
+            .alert(
+                isInitialPromptShown ? copy.followUpTitle : copy.initialTitle,
+                isPresented: $showAlert
+            ) {
+                Button(isInitialPromptShown ? copy.followUpAccept : copy.initialAccept) {
                     requestReview()
                     isCompleted = true
                 }
                 .keyboardShortcut(.defaultAction)
 
                 if isInitialPromptShown {
-                    Button("Nope", role: .cancel) {
+                    Button(copy.followUpDecline, role: .cancel) {
                         isCompleted = true
                     }
                 } else {
-                    Button("Ask Later", role: .cancel) {
+                    Button(copy.askLater, role: .cancel) {
                         isInitialPromptShown = true
                     }
-                    Button("Never Ask Me Again", role: .destructive) {
+                    Button(copy.neverAsk, role: .destructive) {
                         isCompleted = true
                     }
+                }
+            } message: {
+                if let message = isInitialPromptShown ? copy.followUpMessage : copy.initialMessage {
+                    Text(message)
                 }
             }
     }

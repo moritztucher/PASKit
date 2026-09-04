@@ -22,8 +22,9 @@ public struct PASNotificationRequest: Sendable {
     public var body: String
     public var subtitle: String?
 
-    /// Play the default notification sound. `false` delivers silently.
-    public var sound: Bool
+    /// What plays on delivery. Defaults to the system sound; `.silent`
+    /// delivers quietly; `.named("file.wav")` plays a bundled clip.
+    public var sound: PASNotificationSound
 
     /// Badge count to set on delivery. `nil` leaves the badge untouched.
     public var badge: Int?
@@ -41,7 +42,7 @@ public struct PASNotificationRequest: Sendable {
         title: String,
         body: String,
         subtitle: String? = nil,
-        sound: Bool = true,
+        sound: PASNotificationSound = .default,
         badge: Int? = nil,
         userInfo: [String: String] = [:],
         trigger: PASNotificationTrigger

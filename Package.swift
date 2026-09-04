@@ -99,6 +99,13 @@ let package = Package(
             name: "PASKitLifecycleTests",
             dependencies: ["PASKitLifecycle"]
         ),
+        // Covers PASKitNotifications' pure value types — the sound mapping and the
+        // Bool-literal shim. Never touches UNUserNotificationCenter (which aborts on a
+        // bundle-less macOS test host), so it runs on the CI host without a simulator.
+        .testTarget(
+            name: "PASKitNotificationsTests",
+            dependencies: ["PASKitNotifications"]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )

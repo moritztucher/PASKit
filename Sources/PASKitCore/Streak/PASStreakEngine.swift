@@ -6,6 +6,8 @@
 //  grants, first-activity-today increments. Extracted from a shipped
 //  learning app's engine, preserving its ordering rules exactly (consume
 //  before grant; at-cap grants skip without advancing the timestamp).
+//  Rollover also reports `gapDays` (pre-freeze) and `streakLost` (the
+//  zeroed streak) so apps can run a lapse rule without re-deriving it.
 //
 //  Operational rule for callers: run `rolledOver` at launch AND on every
 //  scenePhase == .active — iOS keeps apps resident for days, so a
@@ -34,6 +36,17 @@ public struct PASStreakRolloverOutcome: Equatable, Sendable {
     public var freezeGranted = false
     public var streakDidReset = false
 
+    /// The streak the reset zeroed — what the user lost. `0` when nothing
+    /// reset. Invariant: `streakLost > 0` exactly when `streakDidReset`.
+    /// Apps apply their own lapse threshold (`gapDays >= 7`) at the call site.
+    public var streakLost = 0
+
+    /// Whole calendar days from the stored `lastActiveDay` — as it stood
+    /// *before* this rollover; a consumed freeze moves it — to `today`.
+    /// `0` for no activity ever or a backwards clock. Reported regardless
+    /// of the streak, so a welcome-back surface can key off it alone.
+    public var gapDays = 0
+
     public init() {}
 }
 
@@ -51,6 +64,10 @@ public enum PASStreakEngine {
     ///    immediately spent. At cap the grant is skipped WITHOUT advancing
     ///    the timestamp (the user receives it on the first rollover after
     ///    spending one). A backwards clock never grants.
+    ///
+    /// Reports `gapDays` (pre-freeze) and `streakLost` (the zeroed streak)
+    /// so apps can run a welcome-back rule such as `gapDays >= 7 &&
+    /// streakLost > 0` without re-deriving the arithmetic.
     public static func rolledOver(
         _ state: PASStreakState,
         today: Date = .now,
@@ -59,6 +76,8 @@ public enum PASStreakEngine {
     ) -> (state: PASStreakState, outcome: PASStreakRolloverOutcome) {
         var next = state
         var outcome = PASStreakRolloverOutcome()
+
+        outcome.gapDays = state.lastActiveDay.map { max(0, today.pasDaysSince($0, calendar: calendar)) } ?? 0
 
         if next.streak > 0, next.freezeBalance > 0,
            let lastActive = next.lastActiveDay,
@@ -69,13 +88,15 @@ public enum PASStreakEngine {
             outcome.freezeConsumed = true
         }
 
+        let previousStreak = next.streak
         let rolled = survivingStreak(
-            streak: next.streak,
+            streak: previousStreak,
             lastActiveDay: next.lastActiveDay,
             today: today,
             calendar: calendar
         )
-        outcome.streakDidReset = rolled == 0 && next.streak > 0
+        outcome.streakDidReset = rolled == 0 && previousStreak > 0
+        outcome.streakLost = outcome.streakDidReset ? previousStreak : 0
         next.streak = rolled
 
         if let interval = config.freeFreezeInterval,
