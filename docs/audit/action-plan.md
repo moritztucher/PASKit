@@ -22,7 +22,7 @@ be a *regression* for the app doing the adopting.
 | P5 | **Extend `PASStreakRolloverOutcome`** with `streakLost` (lapse length) and `gapDays`. | Blocks XueTang migrating back onto the engine it donated. | S |
 | P6 | **`PASError.errorDescription` is hardcoded English**, outside any app's string catalog. — **implemented** | Soft-blocks every localized app from adopting the error domain. Lower priority — no current adopter is waiting. Shipped in v0.4.0 as `PASError.localizer` (injectable, read per call) + `developerDescription` (English fallback, developer tone) — see [ADR-0003](../adr/ADR-0003-error-copy-is-app-vocabulary.md). XueTang still needs to install the localizer + add 3 keys × 7 languages before its Release-build feedback alert is actually localized. | M |
 
-### P7 — New `PASKitHealth` module (L)
+### P7 — New `PASKitHealth` module (L) — **implemented**
 
 The strongest extraction signal in the whole audit, and the only one both extract agents reached
 independently. WorkoutApp (`Core/Services/HealthManager.swift` + `HealthManager+Reading.swift` +
@@ -38,6 +38,13 @@ release-notes duplication.
 Its own module, not `PASKitCore` — HealthKit drags usage-description and entitlement expectations
 into every consumer. No vendor SDK, so CCT can link it without breaking its RevenueCat/PostHog
 abstinence.
+
+Shipped in v0.4.0 as `PASKitHealth` (`PASHealth.shared`) — single `HKHealthStore`,
+descriptor-driven `configure`/`requestAuthorization`, honest write-only `writeAuthorization`
+(never a read status — reads are ungated by design), `latestQuantity`/`samples`/`biologicalSex`/
+`dateOfBirthComponents` reads, `save`/`saveQuantity` writes. **Deliberately not in the `PASKit`
+umbrella** — see [ADR-0004](../adr/ADR-0004-paskithealth-umbrella-exclusion.md); apps that use
+Health add the `PASKitHealth` product explicitly. Adoption (WorkoutApp, CCT) is separate work.
 
 ### P8 — Symbol-collision detector (M) — **implemented**
 

@@ -32,6 +32,7 @@ Each module has a spec doc in `docs/` — the source of truth for what that modu
 | `PASKitPurchases` | [docs/PASKitPurchases.md](docs/PASKitPurchases.md) | RevenueCat facade — entitlement state, offerings/products, purchase + restore flow, identity. Apps own paywall UI + product/entitlement IDs. |
 | `PASKitNotifications` | [docs/PASKitNotifications.md](docs/PASKitNotifications.md) | UNUserNotificationCenter facade — delegate plumbing, observable authorization, schedule/cancel primitives, tap routing. Apps own scheduling policy, copy, and navigation. |
 | `PASKitSharing` | [docs/PASKitSharing.md](docs/PASKitSharing.md) | Share-card export — SwiftUI→image rendering, Instagram Stories hand-off, save-to-Photos, activity sheet, preview helpers. Apps own card designs, captions, and fallback policy. |
+| `PASKitHealth` | [docs/PASKitHealth.md](docs/PASKitHealth.md) | HealthKit facade — single store, availability, descriptor-driven authorization, honest write status, ungated reads, point-sample writes. Apps own data types, units, and copy. **Not part of the `PASKit` umbrella** — see [ADR-0004](docs/adr/ADR-0004-paskithealth-umbrella-exclusion.md). |
 
 ## Keeping Docs Current (mandatory)
 

@@ -22,6 +22,7 @@ let package = Package(
         .library(name: "PASKitPurchases", targets: ["PASKitPurchases"]),
         .library(name: "PASKitNotifications", targets: ["PASKitNotifications"]),
         .library(name: "PASKitSharing", targets: ["PASKitSharing"]),
+        .library(name: "PASKitHealth", targets: ["PASKitHealth"]),
     ],
     dependencies: [
         // Foundational
@@ -41,6 +42,11 @@ let package = Package(
         .package(url: "https://github.com/RevenueCat/purchases-ios-spm.git", from: "5.67.0"),
     ],
     targets: [
+        // PASKitHealth is deliberately not re-exported here. Linking HealthKit
+        // makes App Store upload validation demand NSHealthShareUsageDescription
+        // from every consumer, even one with no Health feature — see
+        // docs/adr/ADR-0004-paskithealth-umbrella-exclusion.md. Apps that use
+        // Health take the PASKitHealth product explicitly.
         .target(
             name: "PASKit",
             dependencies: [
@@ -78,6 +84,10 @@ let package = Package(
             dependencies: ["PASKitCore"]
         ),
         .target(
+            name: "PASKitHealth",
+            dependencies: ["PASKitCore"]
+        ),
+        .target(
             name: "PASKitPurchases",
             dependencies: [
                 "PASKitCore",
@@ -105,6 +115,14 @@ let package = Package(
         .testTarget(
             name: "PASKitNotificationsTests",
             dependencies: ["PASKitNotifications"]
+        ),
+        // Covers PASKitHealth's pure logic — the write-authorization derivation
+        // and the permission descriptor. Never touches HKHealthStore (which
+        // aborts on a bundle-less macOS test host and is unavailable there
+        // regardless), so it runs on CI without a simulator.
+        .testTarget(
+            name: "PASKitHealthTests",
+            dependencies: ["PASKitHealth"]
         ),
     ],
     swiftLanguageModes: [.v6]

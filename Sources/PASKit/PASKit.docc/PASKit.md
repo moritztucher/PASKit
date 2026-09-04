@@ -4,9 +4,9 @@ Modular Swift Package for solo iOS founders and small studios shipping multiple 
 
 ## Overview
 
-PASKit is one Swift Package, multiple modules. Each module is a thin, library-quality facade over the infrastructure every iOS app eventually needs — networking, keychain, reachability, logging, app metadata, rate prompts, what's-new sheets, changelog views, version checks, feedback forms, a generic analytics surface, and thin facades over RevenueCat, UNUserNotificationCenter, and share/export. Apps depend only on the modules they use.
+PASKit is one Swift Package, multiple modules. Each module is a thin, library-quality facade over the infrastructure every iOS app eventually needs — networking, keychain, reachability, logging, app metadata, rate prompts, what's-new sheets, changelog views, version checks, feedback forms, a generic analytics surface, and thin facades over RevenueCat, UNUserNotificationCenter, HealthKit, and share/export. Apps depend only on the modules they use.
 
-The umbrella `PASKit` module re-exports every submodule, so apps that take the umbrella product can `import PASKit` once. Apps that depend only on a specific module import it directly.
+The umbrella `PASKit` module re-exports every submodule **except `PASKitHealth`**, so apps that take the umbrella product can `import PASKit` once for six of the seven modules. Apps that depend only on a specific module — or that use Health — import it directly; see <doc:HealthOverview> for why Health is excluded.
 
 ### Modules
 
@@ -16,6 +16,7 @@ The umbrella `PASKit` module re-exports every submodule, so apps that take the u
 - **PASKitPurchases** — thin RevenueCat facade: `configure`, observable `customerInfo`, `isEntitled`, offerings/products, `purchase`/`restorePurchases`, `logIn`/`logOut`, plus the paywall logic layer (`PASPaywallFlow`, `pasSavingsPercent`). Apps own entitlement/product IDs and paywall UI.
 - **PASKitNotifications** — thin `UNUserNotificationCenter` facade: `configure`, observable `authorizationStatus`, `onResponse` tap routing, `schedule`/`fireTest`/`cancel`, `.dailyAt` trigger sugar. Apps own scheduling policy and copy.
 - **PASKitSharing** — share-card export: `PASShareCard.render`, `PASInstagramStories`, `PASPhotoLibrary`, `PASActivitySheet`. Apps own card designs and captions.
+- **PASKitHealth** — thin HealthKit facade: `PASHealth.shared.configure(permissions:)` / `.requestAuthorization()` / `.authorizationRequestStatus()` / observable `.writeAuthorization` / `.latestQuantity` / `.samples` / `.saveQuantity`. **Not in the umbrella** — link the product explicitly. Reads are never gated on authorization; there is no read status, by design.
 
 ### Baseline
 
@@ -38,3 +39,4 @@ PASKit is grown deliberately, not scaffolded upfront. A capability earns a place
 - <doc:PurchasesOverview>
 - <doc:NotificationsOverview>
 - <doc:SharingOverview>
+- <doc:HealthOverview>
