@@ -27,10 +27,10 @@ Sources/PASKitLifecycle/
 ├── LiquidGlass/   PASGlass.swift, PASGlassButtonVariant.swift, View+PasGlass.swift,
 │                  View+PasConcentricClip.swift
 ├── Onboarding/    PASOnboardingFlow.swift, PASOnboardingDirection.swift,
-│                  View+PASOnboardingTransition.swift, PASOnboardingProgressBar.swift
+│                  View+PASOnboardingTransition.swift
 ├── Development/   View+PASDevelopmentOverlay.swift, PASDevelopmentMenu.swift
 ├── Toast/         View+PASToast.swift, PASToast.swift
-├── Indicators/    PASProgressRing.swift
+├── Indicators/    PASProgressRing.swift, PASProgressBar.swift
 └── Settings/      AppInfoFooter.swift
 ```
 
@@ -82,7 +82,7 @@ The one-shot post-update sheet and the cadence that decides when it is due. Extr
 - `PASOnboardingFlow<Step: Hashable>` — `@Observable @MainActor` step engine: index-based navigation over a **live step list** (closure, re-evaluated on access, so conditional flows stay correct as answers change; static list via convenience init). `current` / `count` / `isFirst` / `isLast`, `progress = (index+1)/count`, `advance()` / `back()` (bounded, set `direction`), `go(to:)` (jump with direction from index comparison — used by draft resume). Index clamps when a conditional list shrinks underneath it. Engine only — step vocabulary, step views, and navigation chrome stay per-app (the chrome diverged across all surveyed apps; one had no nav buttons at all).
 - `PASOnboardingDirection` — `.forward` / `.backward`.
 - `View.pasOnboardingTransition(step:direction:animation:)` — the step-change choreography every container hand-rolled: `.id(step)` + direction-flipped asymmetric `.move + .opacity` transition + matching animation (pass the app's motion token).
-- `PASOnboardingProgressBar` — slim capsule bar, track `.quaternary` / fill `.tint`, animated, accessibility value as percentage.
+- Progress chrome: `PASProgressBar` — see the Indicators section below.
 - Resume-after-kill pairs with `PASDraft` (PASKitCore): snapshot answers + current step on change/scene-phase, at launch hydrate answers **first**, then `flow.go(to: restoredStep)`.
 - Extracted from three production implementations (66-day-challenge app, workout app, habit app); the conditional-steps + draft-resume design follows the workout app's, the most evolved of the three.
 
@@ -97,7 +97,8 @@ The one-shot post-update sheet and the cadence that decides when it is due. Extr
 - Extracted from three apps' hand-rolled toasts (undo snackbar, saved-to-Photos capsule, set-logged row).
 
 ### Indicators — ✅ built
-- `PASProgressRing` — circular progress indicator, the circular sibling of `PASOnboardingProgressBar`. Track defaults to a faint adaptive grey (override via `trackColor`), fill is `.tint`, optional `@ViewBuilder` center label, `size`/`lineWidth` params, progress clamped 0…1, `-90°` start + `.round` cap, percentage a11y, spring-animates on progress change (Reduce Motion-aware — snaps instead of springing). Extracted from four apps' rings (the only divergence was color — handled by `.tint` + the track param).
+- `PASProgressRing` — circular progress indicator, the circular sibling of `PASProgressBar`. Track defaults to a faint adaptive grey (override via `trackColor`), fill is `.tint`, optional `@ViewBuilder` center label, `size`/`lineWidth` params, progress clamped 0…1, `-90°` start + `.round` cap, percentage a11y, spring-animates on progress change (Reduce Motion-aware — snaps instead of springing). Extracted from four apps' rings (the only divergence was color — handled by `.tint` + the track param).
+- `PASProgressBar` — slim capsule bar, track `.quaternary` / fill `.tint`, `height` default 4, progress clamped 0…1, percentage a11y, ease-animates on progress change (Reduce Motion-aware). Renamed from `PASOnboardingProgressBar` in v0.3.2 — the bar was never onboarding-specific; the old name survives as a deprecated typealias, planned for removal in the next minor.
 
 ### Settings — ✅ built
 - `AppInfoFooter` (iOS-only) — Settings-screen footer with app icon (via `CFBundleIcons` → `CFBundlePrimaryIcon` → `CFBundleIconFiles`) + display name + version.

@@ -1,22 +1,24 @@
 //
-//  PASOnboardingProgressBar.swift
+//  PASProgressBar.swift
 //  PASKitLifecycle
 //
-//  Slim capsule progress bar for onboarding chrome. System-styled per
-//  PASKit convention: track in `.quaternary`, fill in `.tint` — brand it
-//  at the call site with `.tint(.brand)`.
+//  Slim capsule progress bar. System-styled per PASKit convention: track in
+//  `.quaternary`, fill in `.tint` — brand it at the call site with
+//  `.tint(.brand)`. Reduce Motion-aware (via `pasAnimation`).
 //
 
+import PASKitCore
 import SwiftUI
 
-/// A slim, animated capsule progress bar.
+/// A slim, animated capsule progress bar — the linear sibling of
+/// `PASProgressRing`.
 ///
 /// ```swift
-/// PASOnboardingProgressBar(progress: flow.progress)
+/// PASProgressBar(progress: flow.progress)
 ///     .tint(.brand)
 ///     .padding(.horizontal)
 /// ```
-public struct PASOnboardingProgressBar: View {
+public struct PASProgressBar: View {
     private let progress: Double
     private let height: CGFloat
 
@@ -39,19 +41,23 @@ public struct PASOnboardingProgressBar: View {
             }
         }
         .frame(height: height)
-        .animation(.easeInOut(duration: 0.3), value: progress)
+        .pasAnimation(.easeInOut(duration: 0.3), value: progress)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Progress")
         .accessibilityValue("\(Int((progress * 100).rounded())) percent")
     }
 }
 
+/// Renamed in v0.3.2 — the bar was never onboarding-specific. Alias removed in the next minor.
+@available(*, deprecated, renamed: "PASProgressBar")
+public typealias PASOnboardingProgressBar = PASProgressBar
+
 #Preview {
     VStack(spacing: 24) {
-        PASOnboardingProgressBar(progress: 0.25)
-        PASOnboardingProgressBar(progress: 0.6, height: 6)
+        PASProgressBar(progress: 0.25)
+        PASProgressBar(progress: 0.6, height: 6)
             .tint(.orange)
-        PASOnboardingProgressBar(progress: 1)
+        PASProgressBar(progress: 1)
     }
     .padding()
 }

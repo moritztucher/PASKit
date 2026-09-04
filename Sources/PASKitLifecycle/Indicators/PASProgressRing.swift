@@ -3,7 +3,7 @@
 //  PASKitLifecycle
 //
 //  Circular progress indicator — the circular sibling of
-//  PASOnboardingProgressBar. System-styled: track `.quaternary`, fill
+//  PASProgressBar. System-styled: track `.quaternary`, fill
 //  `.tint`. Brand it at the call site with `.tint(.brand)` and an optional
 //  track color. The center content is the app's (a fraction, a glyph, …).
 //  Reduce Motion-aware (via `pasAnimation`).
