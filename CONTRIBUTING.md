@@ -36,6 +36,17 @@ swift test
 - SwiftLint runs as a build-tool plugin — keep the build warning-clean.
 - CI builds on macOS and across the per-module iOS simulator schemes, and runs `swift test`. `PASKitCoreTests` (Swift Testing) covers PASKitCore's pure logic; make sure both `swift build` and `swift test` pass locally before opening a PR, and add tests alongside behaviour changes where you can.
 
+### The collision-detector script
+
+`Scripts/check-collisions.py` parses PASKit's public surface from `Sources/` — a new public API needs no list update, but a new *declaration syntax* the parser doesn't recognize (e.g. a novel attribute or generic-clause shape) can silently drop symbols from that surface. Run both before opening a PR that touches `Sources/`:
+
+```bash
+python3 -m unittest discover -s Scripts/tests -v
+python3 Scripts/check-collisions.py --paskit . --self-check
+```
+
+`--self-check` asserts a minimum extracted-symbol count and a fixed list of sentinel symbols (see `SELF_CHECK_SENTINELS` in the script) still parse out of PASKit's own sources — if it fails, the parser regressed and needs fixing before the change ships, since every app's CI depends on this surface being accurate.
+
 ## Pull requests
 
 - **Title:** Conventional Commit form — `type(scope): summary`, same as commits.

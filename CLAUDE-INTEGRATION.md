@@ -372,6 +372,16 @@ Button("Log") { … }.buttonStyle(.pasPressable(haptic: .selection,             
 
 **7. Don't reinvent what PASKit owns.** Before writing a local utility for networking, keychain, reachability, version/build reads, app-icon loading at runtime, rate prompt, what's-new, update check, settings footer, a UserDefaults-backed settings store, or local notifications (permission, scheduling, tap routing) — check PASKit. If something belongs in PASKit but isn't there yet, extend PASKit rather than ship a parallel local copy.
 
+**8. Never redeclare a PASKit public name — run the collision check.** Swift resolves an unqualified name against the current module before an imported one, so a local `AppInfo` or `extension View { func presentAppRating(...) }` in a file that imports PASKit silently wins over PASKit's own — the call site looks identical either way. This has happened three times across three apps. Before pushing:
+```sh
+python3 ../PASKit/Scripts/check-collisions.py <app-root> [<app-root> …]
+```
+CI runs the same check on every push via the `ios-ci` reusable workflow (`paskit-collisions.yml`). A deliberate exception — a local type/extension member that must coexist with PASKit's for now — goes in `.paskit-collisions-allow` at the repo root, one entry per line:
+```
+<type|extension> <Symbol> [@ <path>]  -- <justification>
+```
+`type AppInfo -- <why>` suppresses a whole-type collision; `extension View.presentAppRating -- <why>` suppresses one extension member. The optional `@ <path>` scopes the entry to one file (a second colliding declaration elsewhere still fails). **An entry with no justification after `--` fails the run with exit 2** — see `Scripts/README.md` in PASKit for the full CLI, exit codes, and output formats.
+
 ## Purchases — `PASPurchases`, not raw `Purchases`
 
 Configure once at launch, then gate on the observable `customerInfo` and run purchase flows through the facade. RevenueCat types pass through unwrapped — this is a convenience wrapper, not a vendor abstraction:

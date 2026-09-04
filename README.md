@@ -130,7 +130,17 @@ extension PASAnalytics {
 
 ## Architecture decisions
 
-Linked: [ADR-0001 — PASKit reconciliation](docs/adr/ADR-0001-paskit-dashboard-reconciliation.md). Per-module products + umbrella, iOS 18+ baseline, no design layer, thin vendor facades not abstract protocols, `os.Logger` over swift-log.
+Linked: [ADR-0001 — PASKit reconciliation](docs/adr/ADR-0001-paskit-dashboard-reconciliation.md), [ADR-0002 — symbol-collision detector](docs/adr/ADR-0002-symbol-collision-detector.md). Per-module products + umbrella, iOS 18+ baseline, no design layer, thin vendor facades not abstract protocols, `os.Logger` over swift-log.
+
+## Consumer checks
+
+Swift resolves an unqualified name against the current module before an imported one, so an app that accidentally redeclares a PASKit public name (e.g. its own `AppInfo`, or `extension View { func presentAppRating(...) }`) silently shadows PASKit's — the call site looks identical either way. [`Scripts/check-collisions.py`](Scripts/check-collisions.py) parses PASKit's public surface from `Sources/` and fails on a match:
+
+```sh
+python3 ../PASKit/Scripts/check-collisions.py <app-root>
+```
+
+See [`Scripts/README.md`](Scripts/README.md) for flags and exit codes, and `CLAUDE-INTEGRATION.md` for the allowlist format consuming apps use for deliberate exceptions.
 
 ## Claude Code integration
 

@@ -39,7 +39,7 @@ Its own module, not `PASKitCore` — HealthKit drags usage-description and entit
 into every consumer. No vendor SDK, so CCT can link it without breaking its RevenueCat/PostHog
 abstinence.
 
-### P8 — Symbol-collision detector (M)
+### P8 — Symbol-collision detector (M) — **implemented**
 
 Documentation has now failed three times at stopping duplication. Every instance is a **name
 collision with a shipped PASKit symbol**:
@@ -54,8 +54,15 @@ collision with a shipped PASKit symbol**:
 - `CLLDesign/PressScaleButtonStyle.swift:4` duplicates `pasPressable`.
 
 Mechanically detectable: dump PASKit's public symbols, grep each app for local declarations of the
-same names, fail CI on a hit. It would have caught all four. Belongs in the shared CI repo, not in
-PASKit's own test suite.
+same names, fail CI on a hit. Implemented as `Scripts/check-collisions.py` (see
+[ADR-0002](../adr/ADR-0002-symbol-collision-detector.md)) — a dependency-free Python parser over
+`Sources/`, run per-app via a reusable `ios-ci` workflow. **Correction to the original claim above:**
+it catches the three genuine *name* collisions (`View.presentAppRating`, `AppInfo`, and an unlisted
+fourth — `Animation.respectingReducedMotion` in XueTangV2's `Theme.swift:357`, byte-identical to
+PASKit's, found by the tool's dry run and missed by this audit). It does **not** catch
+`CLLDesign/PressScaleButtonStyle` — that is a *semantic* duplicate under a different name
+(`PressScaleButtonStyle` vs. `PASPressableButtonStyle`), invisible to a name-based detector by
+construction. That class of duplication still needs a reading pass, not a mechanical check.
 
 ### P9 — Repo hygiene
 

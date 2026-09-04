@@ -16,7 +16,7 @@ An app that adopts PASKit can wire Claude Code into its surface by adding this l
 @<relative-path>/CLAUDE-INTEGRATION.md
 ```
 
-For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. That single import gives the consuming session PASKit's module list, public API surface, conventions, and the build philosophy summary — so it uses PASKit to the full extent instead of reinventing.
+For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. That single import gives the consuming session PASKit's module list, public API surface, conventions, and the build philosophy summary — so it uses PASKit to the full extent instead of reinventing. CI in every consuming app should also run `Scripts/check-collisions.py` (see `CLAUDE-INTEGRATION.md` "Never redeclare a PASKit public name") so a locally declared name that shadows a PASKit one fails the build instead of silently winning.
 
 When the public surface changes (new module, new API, new convention), update `CLAUDE-INTEGRATION.md` in the same commit. It is the contract apps depend on.
 
