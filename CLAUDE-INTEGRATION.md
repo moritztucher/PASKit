@@ -14,7 +14,7 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 
 | Module | Provides |
 |--------|----------|
-| `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`); haptics (`Haptics.play`, `View.hapticOnTap`); settings (`PASSettingsStore` + `@PASDefault` + `UserDefaultsStorable`); draft persistence (`PASDraft`); styling mechanisms (`Animation.respectingReducedMotion`, `View.pasAnimation`, `Color(light:dark:)`, `Font.pasScaled`, `PASFontRegistration`); calendar math + durations (`Date.pas…` helpers, `PASDurationFormat`); streak engine (`PASStreakState` + `PASStreakEngine` + `PASStreakConfig`); App Group storage (`PASAppGroupContainer` — store-engine-agnostic, no persistence dependency); pressable button style (`.buttonStyle(.pasPressable())`). |
+| `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError` + `PASError.localizer`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`); haptics (`Haptics.play`, `View.hapticOnTap`); settings (`PASSettingsStore` + `@PASDefault` + `UserDefaultsStorable`); draft persistence (`PASDraft`); styling mechanisms (`Animation.respectingReducedMotion`, `View.pasAnimation`, `Color(light:dark:)`, `Font.pasScaled`, `PASFontRegistration`); calendar math + durations (`Date.pas…` helpers, `PASDurationFormat`); streak engine (`PASStreakState` + `PASStreakEngine` + `PASStreakConfig`); App Group storage (`PASAppGroupContainer` — store-engine-agnostic, no persistence dependency); pressable button style (`.buttonStyle(.pasPressable())`). |
 | `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)` + `PASAppRatingKeys` / `PASAppRatingCopy`, `View.presentAppFeedback(...)` + `PASAppFeedbackKeys` / `PASAppFeedbackCopy` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `View.pasGlass(...)` + `View.pasGlassButtonStyle(...)` (iOS 26 with pre-26 fallback), `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` + `WhatsNewGate` + `WhatsNewHighlights` (build-number-gated post-update sheet), `ChangelogView` (`ReleaseNote` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS), onboarding engine (`PASOnboardingFlow` + `View.pasOnboardingTransition`), dev-menu scaffold (`View.pasDevelopmentOverlay` + `PASDevelopmentMenu`), toasts (`View.pasToast` + `PASToast`), progress ring + bar (`PASProgressRing`, `PASProgressBar`). |
 | `PASKitPurchases` | RevenueCat facade: `PASPurchases.shared.configure(...)` / `.customerInfo` (observable, stream-fed) / `.isEntitled` / `.offerings` / `.currentOffering` / `.offering(identifier:)` / `.products` / `.purchase(package/product)` → `PASPurchaseResult` / `.restorePurchases` / `.logIn` / `.logOut`. App owns entitlement + product IDs and the paywall UI. |
 | `PASKitAnalytics` | PostHog facade: `PASAnalytics.shared.setup(...)` / `.capture` / `.screen` / `.identify` / `.register` / `.reset` / `.optIn` / `.optOut` / `.flush` / `.isFeatureEnabled` / `.featureFlagPayload`. App owns event vocabulary as an extension on `PASAnalytics`. |
@@ -234,7 +234,22 @@ WhatsNewView(cards: highlights.cards) { self.highlights = nil }
 ChangelogView(notes: ReleaseNotes.all)
     .entryContainer { config in BrandCard { config.content } }
 ```
-Accent colour otherwise comes from `.tint`. Strings are rendered verbatim — PASKit ships no string catalog, so pass already-localized text.
+Accent colour otherwise comes from `.tint`. Strings are rendered verbatim — PASKit ships no string catalog, so pass already-localized text. The same rule covers error copy: `PASError.errorDescription` is English developer text until the app installs `PASError.localizer` at launch; do it in every localized app.
+```swift
+// App launch — once, before the first network call:
+PASError.localizer = { error in
+    switch error {
+    case .networkUnreachable:
+        String(localized: "No internet connection.", bundle: XTLocalization.bundle)
+    case .rateLimited:
+        String(localized: "Too many requests. Please try again shortly.", bundle: XTLocalization.bundle)
+    case .requestFailed, .decodingFailed, .unexpected:
+        String(localized: "Something went wrong. Please try again.", bundle: XTLocalization.bundle)
+    case .cancelled, .missingCredentials, .invalidCredentials:
+        nil   // fall back to developerDescription
+    }
+}
+```
 
 Feedback prompt — two-stage prompt that opens `FeedbackSheet` on accept. PASKit owns the form, the app owns the transport (the `onSubmit` closure):
 ```swift

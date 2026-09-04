@@ -20,7 +20,7 @@ be a *regression* for the app doing the adopting.
 | P3 | **`PASNotificationRequest.sound` is a `Bool`.** No custom sound name. | Blocks WorkoutApp #6 — `rest_complete.wav` is load-bearing for its single-ding design. | S |
 | P4 | **Promote `PASOnboardingProgressBar` → `PASProgressBar`** in `Indicators/`, deprecated alias behind it. It is already the generic mechanism; only its name and folder say "onboarding". | Six hand-rolled linear bars exist across three apps *because of where it sits*. | S |
 | P5 | **Extend `PASStreakRolloverOutcome`** with `streakLost` (lapse length) and `gapDays`. | Blocks XueTang migrating back onto the engine it donated. | S |
-| P6 | **`PASError.errorDescription` is hardcoded English**, outside any app's string catalog. | Soft-blocks every localized app from adopting the error domain. Lower priority — no current adopter is waiting. | M |
+| P6 | **`PASError.errorDescription` is hardcoded English**, outside any app's string catalog. — **implemented** | Soft-blocks every localized app from adopting the error domain. Lower priority — no current adopter is waiting. Shipped in v0.4.0 as `PASError.localizer` (injectable, read per call) + `developerDescription` (English fallback, developer tone) — see [ADR-0003](../adr/ADR-0003-error-copy-is-app-vocabulary.md). XueTang still needs to install the localizer + add 3 keys × 7 languages before its Release-build feedback alert is actually localized. | M |
 
 ### P7 — New `PASKitHealth` module (L)
 

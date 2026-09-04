@@ -238,11 +238,11 @@ Paired with `Views/ProfileScreen.swift:418-422`, which rotates `Calendar.current
 **Fit** — Partial, and the app's version is the richer one on three axes that matter here:
 1. **Typed throws.** `product(forBarcode:) async throws(OFFError)` (`:26`) and the exhaustive `switch` in `ScanViewModel.lookUp` (`:102-108`) depend on the concrete error type. `NetworkService.send` is untyped `throws`, so adopting it means catching, re-mapping to `OFFError` at the boundary, and reintroducing a default branch — the mapping code does not disappear, it moves.
 2. **404 is a domain outcome, not a failure.** `:50-52` caches `.notFound` per barcode so a re-scan of an unknown product is instant and offline-safe. `PASError` has no `notFound`; it would arrive as `.requestFailed(statusCode: 404, body:)` and need unwrapping back into a domain case.
-3. **Localization.** `OFFError.userMessage` (`OFFError.swift:10-23`) is five `String(localized:)` messages that live in `Localizable.xcstrings`. `PASError.errorDescription` (`PASError.swift:23-45`) is hardcoded English and ships no catalog — surfacing it would put untranslatable English into the German build the app is planning.
+3. **Localization.** `OFFError.userMessage` (`OFFError.swift:10-23`) is five `String(localized:)` messages that live in `Localizable.xcstrings`. `PASError.errorDescription` (`PASError.swift:23-45`) was hardcoded English and shipped no catalog — resolved in v0.4.0 by `PASError.localizer` (see `docs/adr/ADR-0003-error-copy-is-app-vocabulary.md`), which the app would still have to install; points 1–2 stand regardless, so the recommendation is unchanged.
 
 Net saving if adopted: roughly 20 lines of status/decode switch, against a new error-domain hop and the loss of typed throws.
 
-**Risk** — No persisted keys. Localization risk is the material one (point 3): any `PASError` string that reaches the user is un-localizable. The per-barcode negative cache (`:19`, `:27-33`, `:51`, `:69`) is behaviour the app relies on to stay inside Open Food Facts' 15 req/min/IP budget (`.claude/memory.md`) — it must survive any refactor.
+**Risk** — No persisted keys. Localization risk (point 3) is resolved by `PASError.localizer` in v0.4.0, provided the app installs it — an un-installed localizer still leaks English. The per-barcode negative cache (`:19`, `:27-33`, `:51`, `:69`) is behaviour the app relies on to stay inside Open Food Facts' 15 req/min/IP budget (`.claude/memory.md`) — it must survive any refactor.
 
 **Effort** — M.
 

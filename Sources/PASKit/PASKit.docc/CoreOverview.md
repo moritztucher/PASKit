@@ -35,6 +35,8 @@ log.error("\(request.cURL(pretty: true), privacy: .public)")       // replayable
 
 @State private var reachability = NWReachability()
 // observe reachability.status: .unknown / .online / .offline
+
+PASError.localizer = { … }   // app copy for network errors; English developer text otherwise
 ```
 
 ## Settings
