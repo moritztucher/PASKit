@@ -1,0 +1,1 @@
+type AppInfo -- this no longer matches anything, should report stale
