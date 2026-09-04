@@ -53,7 +53,8 @@ Sources/PASKitCore/
 - `KeychainCredentialVault` — KeychainAccess-backed, per-source service scoping, iCloud-synced. `baseService` defaults to the bundle id.
 
 ### Errors — ✅ built
-- `PASError` — shared error domain (`networkUnreachable`, `requestFailed(status:body:)`, `rateLimited(retryAfter:)`, `decodingFailed`, `cancelled`, `unexpected`).
+- `PASError` — shared error domain, 8 cases: `missingCredentials(source:)`, `invalidCredentials(source:)`, `networkUnreachable`, `requestFailed(statusCode:body:)`, `decodingFailed(description:)`, `rateLimited(retryAfter:)`, `cancelled`, `unexpected(description:)`.
+- `PASError.localizer` (`PASErrorLocalizer`) — process-wide, app-installed override read per call so a runtime language switch is honoured; `nil` (default) falls back to `developerDescription`, PASKit's English developer-tone text. A one-shot `PASLogger` warning fires if `errorDescription` is read with no localizer installed in an app with more than one localization.
 
 ### Logging — ✅ built
 - `PASLogger` — a thin facade over `os.Logger`. `make(category:)` returns a logger scoped under the app's bundle id (via `AppInfo`) and the given category. No bootstrap step.
@@ -108,7 +109,7 @@ Brand-free styling *mechanisms* — the layer the per-app token systems sit on. 
 
 ## Tests
 
-`Tests/PASKitCoreTests/` (Swift Testing) covers the pure, deterministic logic — `PASStreakEngine` freeze-ordering rules, `Date+PASCalendar` day/week math, `PASDurationFormat`, `URLRequest.cURL`, `@PASDefault`/`PASSettingsStore`/`PASDraft` round-trips, and `PASError`. A fixed UTC calendar (`TestSupport.swift`) keeps day/week assertions stable across CI timezones. Foundation-only, so they run on the macOS host via `swift test`.
+`Tests/PASKitCoreTests/` (Swift Testing) covers the pure, deterministic logic — `PASStreakEngine` freeze-ordering rules, `Date+PASCalendar` day/week math, `PASDurationFormat`, `URLRequest.cURL`, `@PASDefault`/`PASSettingsStore`/`PASDraft` round-trips, and `PASError` (default developer copy, localizer override, per-case fallback). A fixed UTC calendar (`TestSupport.swift`) keeps day/week assertions stable across CI timezones. Foundation-only, so they run on the macOS host via `swift test`. `PASErrorTests` is `.serialized` — `PASError.localizer` is process-global state.
 
 ## Remaining
 

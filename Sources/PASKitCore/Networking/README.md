@@ -5,7 +5,7 @@ The networking seam — callers build `URLRequest`s and call `send`, never touch
 ## API
 
 - `NetworkService` — protocol contract.
-- `URLSessionNetworkService` — default `URLSession`-backed implementation (2xx handling, 429/Retry-After, decode → `PASError`).
+- `URLSessionNetworkService` — default `URLSession`-backed implementation (2xx handling, 429/Retry-After, decode → `PASError` (see ../Errors/README.md for app-side copy)).
 - `URLRequest.cURL(pretty:)` — render a request as a paste-ready `curl` command for terminal replay.
 
 ## Example

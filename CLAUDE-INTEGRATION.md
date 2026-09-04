@@ -14,13 +14,14 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 
 | Module | Provides |
 |--------|----------|
-| `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`); haptics (`Haptics.play`, `View.hapticOnTap`); settings (`PASSettingsStore` + `@PASDefault` + `UserDefaultsStorable`); draft persistence (`PASDraft`); styling mechanisms (`Animation.respectingReducedMotion`, `View.pasAnimation`, `Color(light:dark:)`, `Font.pasScaled`, `PASFontRegistration`); calendar math + durations (`Date.pas…` helpers, `PASDurationFormat`); streak engine (`PASStreakState` + `PASStreakEngine` + `PASStreakConfig`); App Group storage (`PASAppGroupContainer` — store-engine-agnostic, no persistence dependency); pressable button style (`.buttonStyle(.pasPressable())`). |
+| `PASKitCore` | App + device metadata (`AppInfo`, `DeviceInfo`); networking (`NetworkService`, `URLSessionNetworkService`); shared error domain (`PASError` + `PASError.localizer`); reachability (`Reachability` protocol + `@MainActor @Observable NWReachability`); credentials (`CredentialVault` protocol + `KeychainCredentialVault`); logging (`PASLogger` → `os.Logger`); haptics (`Haptics.play`, `View.hapticOnTap`); settings (`PASSettingsStore` + `@PASDefault` + `UserDefaultsStorable`); draft persistence (`PASDraft`); styling mechanisms (`Animation.respectingReducedMotion`, `View.pasAnimation`, `Color(light:dark:)`, `Font.pasScaled`, `PASFontRegistration`); calendar math + durations (`Date.pas…` helpers, `PASDurationFormat`); streak engine (`PASStreakState` + `PASStreakEngine` + `PASStreakConfig`); App Group storage (`PASAppGroupContainer` — store-engine-agnostic, no persistence dependency); pressable button style (`.buttonStyle(.pasPressable())`). |
 | `PASKitLifecycle` | App-lifecycle UI: `View.presentAppRating(...)` + `PASAppRatingKeys` / `PASAppRatingCopy`, `View.presentAppFeedback(...)` + `PASAppFeedbackKeys` / `PASAppFeedbackCopy` + `FeedbackSheet`, `View.loading(...)` + `DefaultLoadingView`, `View.pasGlass(...)` + `View.pasGlassButtonStyle(...)` (iOS 26 with pre-26 fallback), `VersionCheckManager` + `AppUpdateView`, `WhatsNewView` + `WhatsNewGate` + `WhatsNewHighlights` (build-number-gated post-update sheet), `ChangelogView` (`ReleaseNote` / `ChangelogItem`), `MailComposerView` (iOS), `AppInfoFooter` (iOS), onboarding engine (`PASOnboardingFlow` + `View.pasOnboardingTransition`), dev-menu scaffold (`View.pasDevelopmentOverlay` + `PASDevelopmentMenu`), toasts (`View.pasToast` + `PASToast`), progress ring + bar (`PASProgressRing`, `PASProgressBar`). |
 | `PASKitPurchases` | RevenueCat facade: `PASPurchases.shared.configure(...)` / `.customerInfo` (observable, stream-fed) / `.isEntitled` / `.offerings` / `.currentOffering` / `.offering(identifier:)` / `.products` / `.purchase(package/product)` → `PASPurchaseResult` / `.restorePurchases` / `.logIn` / `.logOut`. App owns entitlement + product IDs and the paywall UI. |
 | `PASKitAnalytics` | PostHog facade: `PASAnalytics.shared.setup(...)` / `.capture` / `.screen` / `.identify` / `.register` / `.reset` / `.optIn` / `.optOut` / `.flush` / `.isFeatureEnabled` / `.featureFlagPayload`. App owns event vocabulary as an extension on `PASAnalytics`. |
 | `PASKitNotifications` | Local-notification facade: `PASNotifications.shared.configure(...)` / `.authorizationStatus` + `.isAuthorized` (observable) / `.onResponse` (tap routing, cold-start buffered) / `.requestAuthorization` / `.schedule(PASNotificationRequest)` (triggers incl. `.dailyAt` sugar; `sound: PASNotificationSound`) / `.fireTest` / `.cancel(ids:)` / `.cancelAll` / `.pendingIDs` / `.setBadgeCount`. App owns scheduling policy, copy, identifiers, and navigation. |
 | `PASKitSharing` | Share-card export: `PASShareCard.render` (SwiftUI→`UIImage`), `PASInstagramStories.share`/`.copySticker`, `PASPhotoLibrary.save`, `PASShareItems` + `PASActivitySheet` (sheet + imperative `present`), `PASScaledCardPreview` + `PASTransparencyCheckerboard`. App owns card designs, captions, fallback policy. |
-| `PASKit` (umbrella) | Re-exports every module — one dependency line, `import` modules individually. |
+| `PASKitHealth` | HealthKit facade: `PASHealth.shared.configure(permissions:)` / `.requestAuthorization()` (never throws) / `.authorizationRequestStatus()` / observable `.writeAuthorization` + `.writeAuthorization(for:)` (write-only — no read status exists, by design) / `.latestQuantitySample` / `.latestQuantity` / `.samples` / `.biologicalSex` / `.dateOfBirthComponents` / `.save` / `.saveQuantity` (throw). **Never in the `PASKit` umbrella** — add this product explicitly. App owns types, units, labels, icons, copy. |
+| `PASKit` (umbrella) | Re-exports every module **except `PASKitHealth`** — one dependency line for the other six, `import` modules individually. Health always needs its own explicit product dependency. |
 
 ## Conventions
 
@@ -234,7 +235,22 @@ WhatsNewView(cards: highlights.cards) { self.highlights = nil }
 ChangelogView(notes: ReleaseNotes.all)
     .entryContainer { config in BrandCard { config.content } }
 ```
-Accent colour otherwise comes from `.tint`. Strings are rendered verbatim — PASKit ships no string catalog, so pass already-localized text.
+Accent colour otherwise comes from `.tint`. Strings are rendered verbatim — PASKit ships no string catalog, so pass already-localized text. The same rule covers error copy: `PASError.errorDescription` is English developer text until the app installs `PASError.localizer` at launch; do it in every localized app.
+```swift
+// App launch — once, before the first network call:
+PASError.localizer = { error in
+    switch error {
+    case .networkUnreachable:
+        String(localized: "No internet connection.", bundle: XTLocalization.bundle)
+    case .rateLimited:
+        String(localized: "Too many requests. Please try again shortly.", bundle: XTLocalization.bundle)
+    case .requestFailed, .decodingFailed, .unexpected:
+        String(localized: "Something went wrong. Please try again.", bundle: XTLocalization.bundle)
+    case .cancelled, .missingCredentials, .invalidCredentials:
+        nil   // fall back to developerDescription
+    }
+}
+```
 
 Feedback prompt — two-stage prompt that opens `FeedbackSheet` on accept. PASKit owns the form, the app owns the transport (the `onSubmit` closure):
 ```swift
@@ -370,7 +386,17 @@ Button("Log") { … }.buttonStyle(.pasPressable(haptic: .selection,             
                                               isHapticEnabled: settings.hapticsEnabled))
 ```
 
-**7. Don't reinvent what PASKit owns.** Before writing a local utility for networking, keychain, reachability, version/build reads, app-icon loading at runtime, rate prompt, what's-new, update check, settings footer, a UserDefaults-backed settings store, or local notifications (permission, scheduling, tap routing) — check PASKit. If something belongs in PASKit but isn't there yet, extend PASKit rather than ship a parallel local copy.
+**7. Don't reinvent what PASKit owns.** Before writing a local utility for networking, keychain, reachability, version/build reads, app-icon loading at runtime, rate prompt, what's-new, update check, settings footer, a UserDefaults-backed settings store, local notifications (permission, scheduling, tap routing), or HealthKit (store, authorization, latest-sample reads) — check PASKit. If something belongs in PASKit but isn't there yet, extend PASKit rather than ship a parallel local copy.
+
+**8. Never redeclare a PASKit public name — run the collision check.** Swift resolves an unqualified name against the current module before an imported one, so a local `AppInfo` or `extension View { func presentAppRating(...) }` in a file that imports PASKit silently wins over PASKit's own — the call site looks identical either way. This has happened three times across three apps. Before pushing:
+```sh
+python3 ../PASKit/Scripts/check-collisions.py <app-root> [<app-root> …]
+```
+CI runs the same check on every push via the `ios-ci` reusable workflow (`paskit-collisions.yml`). A deliberate exception — a local type/extension member that must coexist with PASKit's for now — goes in `.paskit-collisions-allow` at the repo root, one entry per line:
+```
+<type|extension> <Symbol> [@ <path>]  -- <justification>
+```
+`type AppInfo -- <why>` suppresses a whole-type collision; `extension View.presentAppRating -- <why>` suppresses one extension member. The optional `@ <path>` scopes the entry to one file (a second colliding declaration elsewhere still fails). **An entry with no justification after `--` fails the run with exit 2** — see `Scripts/README.md` in PASKit for the full CLI, exit codes, and output formats.
 
 ## Purchases — `PASPurchases`, not raw `Purchases`
 
@@ -475,6 +501,51 @@ PASNotifications.shared.cancel(ids: ["streak-protection"])
 try await PASNotifications.shared.fireTest(dailyReminderRequest)
 ```
 Rules: never cache a permission boolean — observe `authorizationStatus` (auto-refreshed on iOS foreground return). Use stable, app-vocabulary notification ids (`"streak-protection"`), not UUIDs — replace-on-reschedule + `cancel(ids:)` depend on them. `userInfo` is `[String: String]` routing keys only, not state. Triggers: `.interval(_:repeats:)`, `.calendar(DateComponents, repeats:)`, `.at(Date)`. Remote push (APNs/FCM/OneSignal) is not in the module — added when the first app adopts server-side push; local scheduling works without `configure`, but foreground presentation and tap routing need it.
+
+## Health — `PASHealth`, not raw `HKHealthStore`
+
+**Add the `PASKitHealth` product explicitly — it is never part of the `PASKit` umbrella**, even for
+apps that already take the umbrella. Linking HealthKit's authorization API makes App Store upload
+validation demand `NSHealthShareUsageDescription` (+ `NSHealthUpdateUsageDescription` if any
+permission writes) from any consumer that links it, so PASKit does not force that requirement on
+every umbrella app — see `docs/adr/ADR-0004-paskithealth-umbrella-exclusion.md`. The HealthKit
+entitlement and both usage strings are the app's responsibility regardless.
+
+```swift
+import PASKitHealth
+
+// At launch — declare every type you'll ever request:
+PASHealth.shared.configure(permissions: [
+    .quantity(.bodyMass),
+    .quantity(.height, access: .read),
+    .characteristic(.dateOfBirth),
+    .workouts(),
+])
+
+// Presents the system sheet — never throws; a failure here is a developer error, logged:
+await PASHealth.shared.requestAuthorization()
+
+// The only honest status is write status — observable, drives UI:
+switch PASHealth.shared.writeAuthorization {
+case .granted: showConnected()
+case .denied: showReconnectPrompt()
+case .notDetermined: showConnectButton()
+}
+
+// Reads are never gated and never throw — nil/[] is "unavailable, denied, or empty", one state:
+if let weightKg = await PASHealth.shared.latestQuantity(HKQuantityType(.bodyMass), unit: .gramUnit(with: .kilo)) {
+    show(weightKg)
+} else {
+    showManualEntryPrompt()
+}
+
+// Writes may throw — HealthKit reports write failures truthfully:
+try await PASHealth.shared.saveQuantity(HKQuantityType(.bodyMass), value: 72.4, unit: .gramUnit(with: .kilo), date: .now)
+```
+Rules: **never gate a read on authorization** — there is no read status, `nil`/`[]` is the only
+signal HealthKit gives. Gate or catch writes; `writeAuthorization` is truthful for them.
+`PASHealth.shared.store` is the app's one `HKHealthStore` — pass it to anything this facade doesn't
+wrap (`HKWorkoutBuilder`, statistics/observer queries); never construct a second store.
 
 ## Sharing — `PASKitSharing`, not hand-rolled ImageRenderer/Instagram/Photos plumbing
 

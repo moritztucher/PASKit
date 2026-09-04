@@ -25,3 +25,7 @@ xcuserdata/
 .env
 .env.*
 secrets.json
+
+# Python tooling
+__pycache__/
+*.pyc

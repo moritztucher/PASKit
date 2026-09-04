@@ -13,3 +13,10 @@
 @_exported import PASKitPurchases
 @_exported import PASKitNotifications
 @_exported import PASKitSharing
+
+// PASKitHealth is deliberately NOT re-exported here. Its authorization API
+// statically links HealthKit, and App Store upload validation demands
+// NSHealthShareUsageDescription from any linked binary that references it —
+// even a consumer with no Health feature. Apps that use Health add the
+// PASKitHealth product explicitly. See
+// docs/adr/ADR-0004-paskithealth-umbrella-exclusion.md.

@@ -10,7 +10,7 @@
 
 ## What it is
 
-One Swift Package, multiple modules. Each module is a thin, library-quality facade over the infrastructure every iOS app eventually needs — networking, keychain, reachability, logging, app metadata, observable settings, calendar/streak math, App Group storage; rate prompts, onboarding, what's-new, changelog, feedback, toasts, dev menus; and facades over RevenueCat, PostHog, UNUserNotificationCenter, and share/export. Built and extracted from production apps over 12 months. Apps depend only on what they use.
+One Swift Package, multiple modules. Each module is a thin, library-quality facade over the infrastructure every iOS app eventually needs — networking, keychain, reachability, logging, app metadata, observable settings, calendar/streak math, App Group storage; rate prompts, onboarding, what's-new, changelog, feedback, toasts, dev menus; and facades over RevenueCat, PostHog, UNUserNotificationCenter, HealthKit, and share/export. Built and extracted from production apps over 12 months. Apps depend only on what they use.
 
 ## Who it's for
 
@@ -53,8 +53,9 @@ One Swift package, one library product per module — an app imports only what i
 | `PASKitPurchases` | Built | RevenueCat facade — entitlements, offerings/products, purchase + restore, paywall logic layer (pricing math, `PASPaywallFlow`); app owns paywall UI + IDs | [docs/PASKitPurchases.md](docs/PASKitPurchases.md) |
 | `PASKitNotifications` | Built | UNUserNotificationCenter facade — observable authorization, schedule/cancel, tap routing, daily-reminder sugar; app owns policy + copy | [docs/PASKitNotifications.md](docs/PASKitNotifications.md) |
 | `PASKitSharing` | Built | Share-card export — SwiftUI→image render, Instagram Stories, save-to-Photos, activity sheet; app owns card designs | [docs/PASKitSharing.md](docs/PASKitSharing.md) |
+| `PASKitHealth` | Built | HealthKit facade — single store, descriptor-driven authorization, honest write status, ungated latest-sample reads; app owns types, units, copy. **Not in the umbrella** — link the product explicitly | [docs/PASKitHealth.md](docs/PASKitHealth.md) |
 
-Modules are built on first real need, not scaffolded up front.
+Modules are built on first real need, not scaffolded up front. `PASKitHealth` is the one module the umbrella does not re-export — see [ADR-0004](docs/adr/ADR-0004-paskithealth-umbrella-exclusion.md).
 
 ## Quick tour
 
@@ -130,7 +131,17 @@ extension PASAnalytics {
 
 ## Architecture decisions
 
-Linked: [ADR-0001 — PASKit reconciliation](docs/adr/ADR-0001-paskit-dashboard-reconciliation.md). Per-module products + umbrella, iOS 18+ baseline, no design layer, thin vendor facades not abstract protocols, `os.Logger` over swift-log.
+Linked: [ADR-0001 — PASKit reconciliation](docs/adr/ADR-0001-paskit-dashboard-reconciliation.md), [ADR-0002 — symbol-collision detector](docs/adr/ADR-0002-symbol-collision-detector.md), [ADR-0003 — error copy is app vocabulary](docs/adr/ADR-0003-error-copy-is-app-vocabulary.md), [ADR-0004 — PASKitHealth umbrella exclusion](docs/adr/ADR-0004-paskithealth-umbrella-exclusion.md). Per-module products + umbrella, iOS 18+ baseline, no design layer, thin vendor facades not abstract protocols, `os.Logger` over swift-log.
+
+## Consumer checks
+
+Swift resolves an unqualified name against the current module before an imported one, so an app that accidentally redeclares a PASKit public name (e.g. its own `AppInfo`, or `extension View { func presentAppRating(...) }`) silently shadows PASKit's — the call site looks identical either way. [`Scripts/check-collisions.py`](Scripts/check-collisions.py) parses PASKit's public surface from `Sources/` and fails on a match:
+
+```sh
+python3 ../PASKit/Scripts/check-collisions.py <app-root>
+```
+
+See [`Scripts/README.md`](Scripts/README.md) for flags and exit codes, and `CLAUDE-INTEGRATION.md` for the allowlist format consuming apps use for deliberate exceptions.
 
 ## Claude Code integration
 

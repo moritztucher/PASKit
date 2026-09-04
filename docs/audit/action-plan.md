@@ -20,9 +20,9 @@ be a *regression* for the app doing the adopting.
 | P3 | **`PASNotificationRequest.sound` is a `Bool`.** No custom sound name. | Blocks WorkoutApp #6 — `rest_complete.wav` is load-bearing for its single-ding design. | S |
 | P4 | **Promote `PASOnboardingProgressBar` → `PASProgressBar`** in `Indicators/`, deprecated alias behind it. It is already the generic mechanism; only its name and folder say "onboarding". | Six hand-rolled linear bars exist across three apps *because of where it sits*. | S |
 | P5 | **Extend `PASStreakRolloverOutcome`** with `streakLost` (lapse length) and `gapDays`. | Blocks XueTang migrating back onto the engine it donated. | S |
-| P6 | **`PASError.errorDescription` is hardcoded English**, outside any app's string catalog. | Soft-blocks every localized app from adopting the error domain. Lower priority — no current adopter is waiting. | M |
+| P6 | **`PASError.errorDescription` is hardcoded English**, outside any app's string catalog. — **implemented** | Soft-blocks every localized app from adopting the error domain. Lower priority — no current adopter is waiting. Shipped in v0.4.0 as `PASError.localizer` (injectable, read per call) + `developerDescription` (English fallback, developer tone) — see [ADR-0003](../adr/ADR-0003-error-copy-is-app-vocabulary.md). XueTang still needs to install the localizer + add 3 keys × 7 languages before its Release-build feedback alert is actually localized. | M |
 
-### P7 — New `PASKitHealth` module (L)
+### P7 — New `PASKitHealth` module (L) — **implemented**
 
 The strongest extraction signal in the whole audit, and the only one both extract agents reached
 independently. WorkoutApp (`Core/Services/HealthManager.swift` + `HealthManager+Reading.swift` +
@@ -39,7 +39,14 @@ Its own module, not `PASKitCore` — HealthKit drags usage-description and entit
 into every consumer. No vendor SDK, so CCT can link it without breaking its RevenueCat/PostHog
 abstinence.
 
-### P8 — Symbol-collision detector (M)
+Shipped in v0.4.0 as `PASKitHealth` (`PASHealth.shared`) — single `HKHealthStore`,
+descriptor-driven `configure`/`requestAuthorization`, honest write-only `writeAuthorization`
+(never a read status — reads are ungated by design), `latestQuantity`/`samples`/`biologicalSex`/
+`dateOfBirthComponents` reads, `save`/`saveQuantity` writes. **Deliberately not in the `PASKit`
+umbrella** — see [ADR-0004](../adr/ADR-0004-paskithealth-umbrella-exclusion.md); apps that use
+Health add the `PASKitHealth` product explicitly. Adoption (WorkoutApp, CCT) is separate work.
+
+### P8 — Symbol-collision detector (M) — **implemented**
 
 Documentation has now failed three times at stopping duplication. Every instance is a **name
 collision with a shipped PASKit symbol**:
@@ -54,8 +61,15 @@ collision with a shipped PASKit symbol**:
 - `CLLDesign/PressScaleButtonStyle.swift:4` duplicates `pasPressable`.
 
 Mechanically detectable: dump PASKit's public symbols, grep each app for local declarations of the
-same names, fail CI on a hit. It would have caught all four. Belongs in the shared CI repo, not in
-PASKit's own test suite.
+same names, fail CI on a hit. Implemented as `Scripts/check-collisions.py` (see
+[ADR-0002](../adr/ADR-0002-symbol-collision-detector.md)) — a dependency-free Python parser over
+`Sources/`, run per-app via a reusable `ios-ci` workflow. **Correction to the original claim above:**
+it catches the three genuine *name* collisions (`View.presentAppRating`, `AppInfo`, and an unlisted
+fourth — `Animation.respectingReducedMotion` in XueTangV2's `Theme.swift:357`, byte-identical to
+PASKit's, found by the tool's dry run and missed by this audit). It does **not** catch
+`CLLDesign/PressScaleButtonStyle` — that is a *semantic* duplicate under a different name
+(`PressScaleButtonStyle` vs. `PASPressableButtonStyle`), invisible to a name-based detector by
+construction. That class of duplication still needs a reading pass, not a mechanical check.
 
 ### P9 — Repo hygiene
 
