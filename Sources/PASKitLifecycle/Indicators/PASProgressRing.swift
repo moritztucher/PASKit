@@ -6,8 +6,10 @@
 //  PASOnboardingProgressBar. System-styled: track `.quaternary`, fill
 //  `.tint`. Brand it at the call site with `.tint(.brand)` and an optional
 //  track color. The center content is the app's (a fraction, a glyph, …).
+//  Reduce Motion-aware (via `pasAnimation`).
 //
 
+import PASKitCore
 import SwiftUI
 
 /// A circular progress ring with an optional center label.
@@ -53,7 +55,7 @@ public struct PASProgressRing<Label: View>: View {
                 .trim(from: 0, to: progress)
                 .stroke(.tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-                .animation(.spring(response: 0.35, dampingFraction: 0.8), value: progress)
+                .pasAnimation(.spring(response: 0.35, dampingFraction: 0.8), value: progress)
             label
         }
         .frame(width: size, height: size)

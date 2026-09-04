@@ -343,7 +343,7 @@ import PASKitLifecycle
 PASProgressRing(progress: 0.75, lineWidth: 6) { Text("3/4").font(.caption.bold()) }.tint(.brand)
 
 import PASKitCore
-Button("Start") { … }.buttonStyle(.pasPressable())                                  // scale + spring
+Button("Start") { … }.buttonStyle(.pasPressable())                                  // scale + spring (snaps under Reduce Motion)
 Button("Log") { … }.buttonStyle(.pasPressable(haptic: .selection,                   // + press haptic
                                               isHapticEnabled: settings.hapticsEnabled))
 ```

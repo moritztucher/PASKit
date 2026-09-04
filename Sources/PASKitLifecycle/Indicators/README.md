@@ -4,7 +4,7 @@ Generic, system-styled progress indicators. The fill comes from `.tint`; brand i
 
 ## API
 
-- `PASProgressRing` — circular progress (clamped 0…1, `size` / `lineWidth` / `trackColor`, optional `@ViewBuilder` center label, `-90°` start + `.round` cap, percentage accessibility, spring on change). The circular sibling of `PASOnboardingProgressBar` (see [`../Onboarding/`](../Onboarding/)).
+- `PASProgressRing` — circular progress (clamped 0…1, `size` / `lineWidth` / `trackColor`, optional `@ViewBuilder` center label, `-90°` start + `.round` cap, percentage accessibility, spring on change — Reduce Motion-aware, snaps instead). The circular sibling of `PASOnboardingProgressBar` (see [`../Onboarding/`](../Onboarding/)).
 
 ## Example
 

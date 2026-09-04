@@ -9,7 +9,7 @@ Brand-free styling *mechanisms* — the layer under per-app token systems. Token
 - `Color(light:dark:)` — appearance-resolving color without an asset catalog (UIColor/NSColor bridged, cross-platform).
 - `Font.pasScaled(_:relativeTo:weight:design:)` — system font at a custom point size that tracks Dynamic Type via `UIFontMetrics` (fixed-size fallback on macOS).
 - `PASFontRegistration.registerBundledFonts(named:bundle:)` — `CTFontManager` workaround for Xcode's `GENERATE_INFOPLIST_FILE` dropping `UIAppFonts`.
-- `PASPressableButtonStyle` / `.buttonStyle(.pasPressable(…))` — press-scale + spring with an optional `PASHaptic` on the press-down edge.
+- `PASPressableButtonStyle` / `.buttonStyle(.pasPressable(…))` — press-scale + spring with an optional `PASHaptic` on the press-down edge. Reduce Motion-aware (snap instead of spring).
 
 ## Example
 

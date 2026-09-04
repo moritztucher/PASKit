@@ -93,7 +93,7 @@ The one-shot post-update sheet and the cadence that decides when it is due. Extr
 - Extracted from three apps' hand-rolled toasts (undo snackbar, saved-to-Photos capsule, set-logged row).
 
 ### Indicators — ✅ built
-- `PASProgressRing` — circular progress indicator, the circular sibling of `PASOnboardingProgressBar`. Track defaults to a faint adaptive grey (override via `trackColor`), fill is `.tint`, optional `@ViewBuilder` center label, `size`/`lineWidth` params, progress clamped 0…1, `-90°` start + `.round` cap, percentage a11y, spring-animates on progress change. Extracted from four apps' rings (the only divergence was color — handled by `.tint` + the track param).
+- `PASProgressRing` — circular progress indicator, the circular sibling of `PASOnboardingProgressBar`. Track defaults to a faint adaptive grey (override via `trackColor`), fill is `.tint`, optional `@ViewBuilder` center label, `size`/`lineWidth` params, progress clamped 0…1, `-90°` start + `.round` cap, percentage a11y, spring-animates on progress change (Reduce Motion-aware — snaps instead of springing). Extracted from four apps' rings (the only divergence was color — handled by `.tint` + the track param).
 
 ### Settings — ✅ built
 - `AppInfoFooter` (iOS-only) — Settings-screen footer with app icon (via `CFBundleIcons` → `CFBundlePrimaryIcon` → `CFBundleIconFiles`) + display name + version.
