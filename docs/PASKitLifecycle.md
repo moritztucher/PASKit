@@ -14,9 +14,10 @@ Sources are grouped by topic — one public type per file:
 
 ```
 Sources/PASKitLifecycle/
-├── Rating/        View+PresentAppRating.swift
+├── Rating/        View+PresentAppRating.swift, PASAppRatingKeys.swift, PASAppRatingCopy.swift
 ├── Feedback/      FeedbackPayload.swift, FeedbackSheet.swift,
-│                  View+PresentAppFeedback.swift, MailComposerView.swift
+│                  View+PresentAppFeedback.swift, MailComposerView.swift,
+│                  PASAppFeedbackKeys.swift, PASAppFeedbackCopy.swift
 ├── Update/        VersionCheckManager.swift, AppUpdateView.swift
 ├── WhatsNew/      WhatsNewCard.swift, WhatsNewCardResultBuilder.swift, WhatsNewView.swift,
 │                  WhatsNewSlots.swift, WhatsNewGate.swift, WhatsNewHighlights.swift
@@ -36,10 +37,13 @@ Sources/PASKitLifecycle/
 ## Components
 
 ### Rating — ✅ built
-`View.presentAppRating(initialCondition:askLaterCondition:)` — wraps StoreKit's `requestReview` with a two-stage alert (Yes / Ask Later / Never Ask Me Again; then Yes / Nope). Caller supplies trigger conditions as async closures. State persisted via `@AppStorage`. Extracted from a shipped Mandarin-learning app.
+`View.presentAppRating(initialCondition:askLaterCondition:keys:copy:)` — wraps StoreKit's `requestReview` with a two-stage alert (Yes / Ask Later / Never Ask Me Again; then Yes / Nope). Caller supplies trigger conditions as async closures. State persisted via `@AppStorage`. Extracted from a shipped Mandarin-learning app.
+- `PASAppRatingKeys` — the two `UserDefaults` keys are an init parameter, not a constant: installed-user state, so an app that already shipped a rate prompt must pass the keys it shipped with or every resolved user sees the prompt replay. `.standard` for new apps.
+- `PASAppRatingCopy` — per-stage alert copy is injectable — the string-catalog-free localisation answer for this surface (`String(localized:bundle:)` at the call site) and where app-name personalisation (`"Enjoying \(AppInfo.displayName)?"`) lives. `.standard` byte-matches the strings PASKit has always shown.
 
 ### Feedback — ✅ built
-- `View.presentAppFeedback(initialCondition:askLaterCondition:content:)` — same two-stage pattern as `presentAppRating`, but accepting presents the supplied view as a sheet (typically `FeedbackSheet`). Destination view is injected so apps can wire any feedback view. One-shot, persisted via `@AppStorage`. Cross-platform.
+- `View.presentAppFeedback(initialCondition:askLaterCondition:keys:copy:content:)` — same two-stage pattern as `presentAppRating`, but accepting presents the supplied view as a sheet (typically `FeedbackSheet`). Destination view is injected so apps can wire any feedback view. One-shot, persisted via `@AppStorage`. Cross-platform.
+- `PASAppFeedbackKeys` / `PASAppFeedbackCopy` — same installed-user-state and copy-injection rules as `PASAppRatingKeys` / `PASAppRatingCopy` above.
 - `FeedbackSheet` — in-app feedback form. PASKit owns the form UI (category picker, name, email, message); caller owns the transport via `onSubmit: @Sendable (FeedbackPayload) async throws -> Void`. Configurable: hero (`title`, `subtitle`, `heroSymbol` — `nil` hides the symbol), `categories`, prefill (`initialName` / `initialEmail` — pass known identity so users don't retype), `showsCloseButton` (ⓧ top-trailing; replaces Cancel on compact). Adaptive — two-pane on regular width / macOS with inline Cancel/Send, stacked on compact iOS with a full-width large Send. Surfaces an alert on thrown errors. Apps with a locked design language can bypass the form and build their own UI over `FeedbackPayload` (XueTang V2 does) — payload + transport stay the shared mechanism.
 - `FeedbackPayload` — the typed payload (`category`, `name`, `email`, `message`).
 - `MailComposerView` (iOS-only) — thin `UIViewControllerRepresentable` over `MFMailComposeViewController`. Static `canSendMail` check to gate presentation.

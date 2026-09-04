@@ -24,16 +24,26 @@ public extension View {
     ///   - askLaterCondition: Evaluated on appear after *Ask Later*. Return
     ///     `true` to show the second alert.
     ///   - content: The sheet to present on accept. Usually `FeedbackSheet(...)`.
+    ///   - keys: `UserDefaults` keys backing the one-shot state. Defaults to
+    ///     `.standard`. An app that already shipped its own keys **must**
+    ///     pass them here, or every installed user sees the prompt replay.
+    ///   - copy: Alert copy per stage. Defaults to `.standard` — the copy
+    ///     PASKit has always shown. Pass app vocabulary or localised
+    ///     strings to personalise it.
     @ViewBuilder
     func presentAppFeedback<Content: View>(
         initialCondition: @escaping () async -> Bool,
         askLaterCondition: @escaping () async -> Bool,
+        keys: PASAppFeedbackKeys = .standard,
+        copy: PASAppFeedbackCopy = .standard,
         @ViewBuilder content: @escaping () -> Content
     ) -> some View {
         modifier(
             AppFeedbackModifier(
                 initialCondition: initialCondition,
                 askLaterCondition: askLaterCondition,
+                keys: keys,
+                copy: copy,
                 sheetContent: content
             )
         )
@@ -43,12 +53,28 @@ public extension View {
 private struct AppFeedbackModifier<SheetContent: View>: ViewModifier {
     let initialCondition: () async -> Bool
     let askLaterCondition: () async -> Bool
+    let copy: PASAppFeedbackCopy
     @ViewBuilder let sheetContent: () -> SheetContent
 
-    @AppStorage("paskit.appFeedback.isComplete") private var isCompleted = false
-    @AppStorage("paskit.appFeedback.isInitialPromptShown") private var isInitialPromptShown = false
+    @AppStorage private var isCompleted: Bool
+    @AppStorage private var isInitialPromptShown: Bool
     @State private var showAlert = false
     @State private var showSheet = false
+
+    init(
+        initialCondition: @escaping () async -> Bool,
+        askLaterCondition: @escaping () async -> Bool,
+        keys: PASAppFeedbackKeys,
+        copy: PASAppFeedbackCopy,
+        @ViewBuilder sheetContent: @escaping () -> SheetContent
+    ) {
+        self.initialCondition = initialCondition
+        self.askLaterCondition = askLaterCondition
+        self.copy = copy
+        self.sheetContent = sheetContent
+        _isCompleted = AppStorage(wrappedValue: false, keys.isCompleted)
+        _isInitialPromptShown = AppStorage(wrappedValue: false, keys.isInitialPromptShown)
+    }
 
     func body(content: Content) -> some View {
         content
@@ -61,24 +87,31 @@ private struct AppFeedbackModifier<SheetContent: View>: ViewModifier {
                     showAlert = true
                 }
             }
-            .alert("Got a moment to share feedback?", isPresented: $showAlert) {
-                Button(isInitialPromptShown ? "Yes!" : "Yes, Continue!") {
+            .alert(
+                isInitialPromptShown ? copy.followUpTitle : copy.initialTitle,
+                isPresented: $showAlert
+            ) {
+                Button(isInitialPromptShown ? copy.followUpAccept : copy.initialAccept) {
                     isCompleted = true
                     showSheet = true
                 }
                 .keyboardShortcut(.defaultAction)
 
                 if isInitialPromptShown {
-                    Button("Nope", role: .cancel) {
+                    Button(copy.followUpDecline, role: .cancel) {
                         isCompleted = true
                     }
                 } else {
-                    Button("Ask Later", role: .cancel) {
+                    Button(copy.askLater, role: .cancel) {
                         isInitialPromptShown = true
                     }
-                    Button("Never Ask Me Again", role: .destructive) {
+                    Button(copy.neverAsk, role: .destructive) {
                         isCompleted = true
                     }
+                }
+            } message: {
+                if let message = isInitialPromptShown ? copy.followUpMessage : copy.initialMessage {
+                    Text(message)
                 }
             }
             .sheet(isPresented: $showSheet) {
