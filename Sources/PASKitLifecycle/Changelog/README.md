@@ -37,4 +37,10 @@ NavigationLink("What's New") {
 }
 ```
 
+## Release notes are also the TestFlight "What to Test"
+
+Author the list in `ReleaseNotes.swift` as `enum ReleaseNotes { static let all: [ReleaseNote] }`. Beyond the two in-app surfaces, the shared TestFlight pipeline parses the newest entry's `changes:` and uploads it as the build's "What to Test", so a release is authored once and read everywhere — testers included. An app with no such list gets filtered commit subjects instead, and its build warns.
+
+Keep `version:` equal to the `MARKETING_VERSION` being shipped; CI warns on a mismatch, because it means no notes were written for this release. `build:` may lag the shipped build — the pipeline reads the build number from TestFlight at upload time, and `WhatsNewGate` collects every note in `(lastSeen, currentBuild]` — but must never lead it, or the sheet stays hidden until the app catches up.
+
 The newest release gets a "Latest" badge; pass `latestBadgeTitle: nil` to hide it. Dates are stored as `Date` and rendered localized — the `date:` string convenience parses ISO `"yyyy-MM-dd"` and degrades to no date rather than trapping.
