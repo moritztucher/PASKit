@@ -1,7 +1,27 @@
 # Action plan — PASKit consolidation
 
 Derived from the six audits in this folder (2026-09-04, PASKit v0.3.1). Each item cites the audit
-it came from. Nothing here has been done; this is the backlog, ordered.
+it came from.
+
+> **Status — 2026-09-05.** Sections 0 (P1–P9), 1, 2 and 3 are **done and pushed**. PASKit shipped
+> the nine blocking items across v0.3.1–v0.4.0, and all three apps then adopted the shared APIs:
+> WorkoutApp `27eb99d` (−388 lines), CoupleCalorieTracker `aea8b27`, XueTangV2 `5604b5f54`. All
+> three build green and the collision detector reports zero errors, zero warnings and zero stale
+> allowlist entries in each.
+>
+> **Two items were deliberately not done, and should not be revived without re-reading why:**
+> - **XueTang #4, `FeedbackService` → `PASAnalytics`** — superseded. `XueTangV2/docs/PRIVACY-OPEN-ITEMS.md`
+>   §2 establishes that the PostHog SDK *drops* `capture` while opted out, so a migrated feedback
+>   path would silently discard submissions from opted-out users while the sheet says "sent". The
+>   hand-rolled POST is correct.
+> - **WorkoutApp #7, `WorkoutAppLiveActivity.elapsedText`** — that extension target does not link
+>   PASKit, so its inline `min:sec` copy stays until the target gains the dependency.
+>
+> What remains from these audits is the **"Contribute to PASKit"** column in each app section —
+> extraction work, gated on *build on real need*. The strongest candidates, both with two-app
+> evidence, are the **audio-session lifecycle** (WorkoutApp's `RestEndSound` lacks the interruption
+> observer XueTang already has, so extracting fixes a bug) and the **permission tri-state**
+> (three apps, three incompatible spellings).
 
 **The headline from all six audits: the adoption gap is larger than the extraction opportunity.**
 Every app runs parallel copies of PASKit APIs it already links. Fix that before growing PASKit.
