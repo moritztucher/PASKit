@@ -170,7 +170,7 @@ let result = await VersionCheckManager().checkIfAppUpdateAvailable()
 // AppUpdateView(update:, forceUpdate: false) — dismissible nudge by default
 ```
 
-Release notes — author each release **once**, as a `[ReleaseNote]` newest build first. It drives both the post-update sheet and the Settings changelog. Do not write your own release-note model:
+Release notes — author each release **once**, as a `[ReleaseNote]` newest build first, in `ReleaseNotes.swift`. It drives both the post-update sheet and the Settings changelog, and the TestFlight pipeline reads it too (see below). Do not write your own release-note model:
 ```swift
 enum ReleaseNotes {
     static let all: [ReleaseNote] = [
@@ -188,6 +188,12 @@ enum ReleaseNotes {
 }
 ```
 `build` is the identity and the cadence key — unique and strictly increasing. SF Symbol names for `symbol`, not asset names.
+
+This list is also the app's **"What to Test"**. The shared TestFlight pipeline (`what_to_test` in `~/ci/templates/Fastfile`) reads the newest entry's `changes:` out of the source and hands that to App Store Connect, so testers read the release text instead of commit subjects. Three consequences for a consuming app:
+
+- Name the file `ReleaseNotes.swift` and declare `static let all: [ReleaseNote]`. An app that authors no list falls back to filtered commit subjects, and the build warns.
+- Write `changes:` for a reader, not for a colleague — they are read by testers and are the natural source for the App Store "What's New".
+- `version:` must be the `MARKETING_VERSION` being shipped. CI warns when it is not: it means nobody authored notes for this release. `build:` may lag the shipped build (CI reads the build number from TestFlight at upload time) but must never lead it, or the What's New sheet stays hidden until the app catches up.
 
 What's-new (one-shot post-update sheet, gated on the build number). `WhatsNewGate` owns the whole cadence — skipped-build catch-up, downgrades, fresh installs. Never reimplement it:
 ```swift
@@ -212,7 +218,7 @@ Return contract: `nil` = present nothing, mark nothing. `[]` = mark presented, s
 The same sheet also serves a manual "What's New" row in Settings — pass `isDismissible: true` there (default is `false`, so the one-shot post-update sheet must be acknowledged via the CTA) and pair it with `.presentationDragIndicator(.visible)`:
 ```swift
 .sheet(isPresented: $showWhatsNew) {
-    WhatsNewView(cards: ReleaseHighlights.current, isDismissible: true) { showWhatsNew = false }
+    WhatsNewView(cards: ReleaseNotes.all.first?.highlights ?? [], isDismissible: true) { showWhatsNew = false }
         .presentationDragIndicator(.visible)
 }
 ```
