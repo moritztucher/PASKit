@@ -23,6 +23,7 @@ let package = Package(
         .library(name: "PASKitNotifications", targets: ["PASKitNotifications"]),
         .library(name: "PASKitSharing", targets: ["PASKitSharing"]),
         .library(name: "PASKitHealth", targets: ["PASKitHealth"]),
+        .library(name: "PASKitAuth", targets: ["PASKitAuth"]),
     ],
     dependencies: [
         // Foundational
@@ -40,13 +41,24 @@ let package = Package(
         .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.4.0"),
         // RevenueCat — committed vendor for PASKitPurchases.
         .package(url: "https://github.com/RevenueCat/purchases-ios-spm.git", from: "5.67.0"),
+        // Firebase — committed vendor for PASKitAuth. Pinned to the studio's
+        // known-good major: 11.x is what XueTang ships the donor implementation
+        // of these flows against, so the behaviour PASKitAuth inherits is
+        // verified there. Only FirebaseAuth is taken; Firestore and Analytics
+        // stay the app's own dependency.
+        .package(url: "https://github.com/firebase/firebase-ios-sdk", from: "11.15.0"),
     ],
     targets: [
-        // PASKitHealth is deliberately not re-exported here. Linking HealthKit
-        // makes App Store upload validation demand NSHealthShareUsageDescription
-        // from every consumer, even one with no Health feature — see
-        // docs/adr/ADR-0004-paskithealth-umbrella-exclusion.md. Apps that use
-        // Health take the PASKitHealth product explicitly.
+        // PASKitHealth and PASKitAuth are deliberately not re-exported here.
+        // Linking HealthKit makes App Store upload validation demand
+        // NSHealthShareUsageDescription from every consumer, even one with no
+        // Health feature — see
+        // docs/adr/ADR-0004-paskithealth-umbrella-exclusion.md. PASKitAuth pulls
+        // the Firebase SDK into every consumer's binary and expects a bundled
+        // GoogleService-Info.plist, which an account-less app has no reason to
+        // carry — see
+        // docs/adr/ADR-0005-paskitauth-scope-and-umbrella-exclusion.md. Apps
+        // that use either take that product explicitly.
         .target(
             name: "PASKit",
             dependencies: [
@@ -88,6 +100,13 @@ let package = Package(
             dependencies: ["PASKitCore"]
         ),
         .target(
+            name: "PASKitAuth",
+            dependencies: [
+                "PASKitCore",
+                .product(name: "FirebaseAuth", package: "firebase-ios-sdk"),
+            ]
+        ),
+        .target(
             name: "PASKitPurchases",
             dependencies: [
                 "PASKitCore",
@@ -123,6 +142,14 @@ let package = Package(
         .testTarget(
             name: "PASKitHealthTests",
             dependencies: ["PASKitHealth"]
+        ),
+        // Covers PASKitAuth's pure logic — nonce generation and hashing, and the
+        // value types crossing the delegate boundary. Never touches
+        // Auth.auth() (which needs a configured FirebaseApp and a real bundle),
+        // so it runs on the CI host without a simulator.
+        .testTarget(
+            name: "PASKitAuthTests",
+            dependencies: ["PASKitAuth"]
         ),
     ],
     swiftLanguageModes: [.v6]
