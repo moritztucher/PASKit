@@ -21,7 +21,8 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 | `PASKitNotifications` | Local-notification facade: `PASNotifications.shared.configure(...)` / `.authorizationStatus` + `.isAuthorized` (observable) / `.onResponse` (tap routing, cold-start buffered) / `.requestAuthorization` / `.schedule(PASNotificationRequest)` (triggers incl. `.dailyAt` sugar; `sound: PASNotificationSound`) / `.fireTest` / `.cancel(ids:)` / `.cancelAll` / `.pendingIDs` / `.setBadgeCount`. App owns scheduling policy, copy, identifiers, and navigation. |
 | `PASKitSharing` | Share-card export: `PASShareCard.render` (SwiftUI→`UIImage`), `PASInstagramStories.share`/`.copySticker`, `PASPhotoLibrary.save`, `PASShareItems` + `PASActivitySheet` (sheet + imperative `present`), `PASScaledCardPreview` + `PASTransparencyCheckerboard`. App owns card designs, captions, fallback policy. |
 | `PASKitHealth` | HealthKit facade: `PASHealth.shared.configure(permissions:)` / `.requestAuthorization()` (never throws) / `.authorizationRequestStatus()` / observable `.writeAuthorization` + `.writeAuthorization(for:)` (write-only — no read status exists, by design) / `.latestQuantitySample` / `.latestQuantity` / `.samples` / `.biologicalSex` / `.dateOfBirthComponents` / `.save` / `.saveQuantity` (throw). **Never in the `PASKit` umbrella** — add this product explicitly. App owns types, units, labels, icons, copy. |
-| `PASKit` (umbrella) | Re-exports every module **except `PASKitHealth`** — one dependency line for the other six, `import` modules individually. Health always needs its own explicit product dependency. |
+| `PASKitAuth` | Firebase Auth facade: `PASAuth.shared.configure(_:)` / observable `.uid` + `.isAnonymous` + `.isLinked` + `.isSignedIn` + `.isBusy` + `.isConfigured` + `.lastError` / `.restoreSession()` / `.signInAnonymouslyIfNeeded()` / `.prepareAppleSignIn()` + `.signInWithApple(authorization:)` (throwing, for `ASAuthorizationController`) / `.prepareAppleRequest(_:)` + `.completeAppleSignIn(_:)` (non-throwing, for SwiftUI's `SignInWithAppleButton`) / `.signOut()` / `.deleteAccount()` → `PASAccountDeletionResult`; `PASAuthDelegate` (all methods defaulted) for moving app data with the session; `PASFreshInstallGuard`. Sign in with Apple only — no Google. Needs a bundled `GoogleService-Info.plist`; without one it no-ops and the app runs signed-out. **Never in the `PASKit` umbrella** — add this product explicitly. App owns sign-in UI and copy. |
+| `PASKit` (umbrella) | Re-exports every module **except `PASKitHealth` and `PASKitAuth`** — one dependency line for the other six, `import` modules individually. Health and Auth always need their own explicit product dependency. |
 
 ## Conventions
 
@@ -501,6 +502,49 @@ PASNotifications.shared.cancel(ids: ["streak-protection"])
 try await PASNotifications.shared.fireTest(dailyReminderRequest)
 ```
 Rules: never cache a permission boolean — observe `authorizationStatus` (auto-refreshed on iOS foreground return). Use stable, app-vocabulary notification ids (`"streak-protection"`), not UUIDs — replace-on-reschedule + `cancel(ids:)` depend on them. `userInfo` is `[String: String]` routing keys only, not state. Triggers: `.interval(_:repeats:)`, `.calendar(DateComponents, repeats:)`, `.at(Date)`. Remote push (APNs/FCM/OneSignal) is not in the module — added when the first app adopts server-side push; local scheduling works without `configure`, but foreground presentation and tap routing need it.
+
+## Auth — `PASAuth`, not raw `FirebaseAuth`
+
+**Add the `PASKitAuth` product explicitly — it is never part of the `PASKit` umbrella.** It links
+the Firebase iOS SDK into any consumer that takes it, and expects a bundled
+`GoogleService-Info.plist` an account-less app has no reason to carry — see
+`docs/adr/ADR-0005-paskitauth-scope-and-umbrella-exclusion.md`. Sign in with Apple only; no Google.
+The **Sign in with Apple** capability, the plist, and all sign-in UI are the app's.
+
+```swift
+import PASKitAuth
+
+// At launch, before any UI reads uid. The delegate is weak — hold it yourself.
+PASAuth.shared.delegate = userStore
+await PASAuth.shared.configure(PASAuthConfig(signInAnonymouslyAtLaunch: true))
+
+// Driving ASAuthorizationController yourself — prepare, then complete (throws):
+let request = ASAuthorizationAppleIDProvider().createRequest()
+request.requestedScopes = [.fullName, .email]
+request.nonce = PASAuth.shared.prepareAppleSignIn()
+let user = try await PASAuth.shared.signInWithApple(authorization: authorization)
+
+// Or SwiftUI's button — prepare the request, complete the Result (never throws):
+SignInWithAppleButton(
+    onRequest: { PASAuth.shared.prepareAppleRequest($0) },
+    onCompletion: { result in Task { await PASAuth.shared.completeAppleSignIn(result) } }
+)
+.disabled(PASAuth.shared.isBusy)
+
+switch await PASAuth.shared.deleteAccount() {
+case .deleted:             appState.showOnboarding = true
+case .requiresRecentLogin: await reauthenticateThenRetry()   // not an error — retry after sign-in
+case .failed(let reason):  log.error("\(reason)")
+}
+```
+
+Rules: never cache `isSignedIn` — observe it. Delete the app's **remote** data inside
+`willDeleteAccount(uid:)` and return `false` if that fails; it runs while the user is still
+authenticated, which is usually the only time that data is readable. Local wipe belongs in
+`didDeleteAccount(uid:)`. `didUpgradeGuest` is separate from `didSignIn` because linking preserves
+the uid and the app usually migrates rather than loads. `isBusy` is raised when the request is
+*prepared*, not when it completes — the native Apple button has no start callback. Without a
+bundled plist every method no-ops and the app runs signed-out, deliberately.
 
 ## Health — `PASHealth`, not raw `HKHealthStore`
 

@@ -54,8 +54,9 @@ One Swift package, one library product per module — an app imports only what i
 | `PASKitNotifications` | Built | UNUserNotificationCenter facade — observable authorization, schedule/cancel, tap routing, daily-reminder sugar; app owns policy + copy | [docs/PASKitNotifications.md](docs/PASKitNotifications.md) |
 | `PASKitSharing` | Built | Share-card export — SwiftUI→image render, Instagram Stories, save-to-Photos, activity sheet; app owns card designs | [docs/PASKitSharing.md](docs/PASKitSharing.md) |
 | `PASKitHealth` | Built | HealthKit facade — single store, descriptor-driven authorization, honest write status, ungated latest-sample reads; app owns types, units, copy. **Not in the umbrella** — link the product explicitly | [docs/PASKitHealth.md](docs/PASKitHealth.md) |
+| `PASKitAuth` | Built | Firebase Auth facade — Sign in with Apple, anonymous accounts, guest linking, deletion with the ordering it needs; app owns sign-in UI + copy. **Not in the umbrella** — link the product explicitly | [docs/PASKitAuth.md](docs/PASKitAuth.md) |
 
-Modules are built on first real need, not scaffolded up front. `PASKitHealth` is the one module the umbrella does not re-export — see [ADR-0004](docs/adr/ADR-0004-paskithealth-umbrella-exclusion.md).
+Modules are built on first real need, not scaffolded up front. `PASKitHealth` and `PASKitAuth` are the two modules the umbrella does not re-export — each would force a vendor SDK or a platform capability onto apps that do not use it. See [ADR-0004](docs/adr/ADR-0004-paskithealth-umbrella-exclusion.md) and [ADR-0005](docs/adr/ADR-0005-paskitauth-scope-and-umbrella-exclusion.md).
 
 ## Quick tour
 
@@ -131,7 +132,7 @@ extension PASAnalytics {
 
 ## Architecture decisions
 
-Linked: [ADR-0001 — PASKit reconciliation](docs/adr/ADR-0001-paskit-dashboard-reconciliation.md), [ADR-0002 — symbol-collision detector](docs/adr/ADR-0002-symbol-collision-detector.md), [ADR-0003 — error copy is app vocabulary](docs/adr/ADR-0003-error-copy-is-app-vocabulary.md), [ADR-0004 — PASKitHealth umbrella exclusion](docs/adr/ADR-0004-paskithealth-umbrella-exclusion.md). Per-module products + umbrella, iOS 18+ baseline, no design layer, thin vendor facades not abstract protocols, `os.Logger` over swift-log.
+Linked: [ADR-0001 — PASKit reconciliation](docs/adr/ADR-0001-paskit-dashboard-reconciliation.md), [ADR-0002 — symbol-collision detector](docs/adr/ADR-0002-symbol-collision-detector.md), [ADR-0003 — error copy is app vocabulary](docs/adr/ADR-0003-error-copy-is-app-vocabulary.md), [ADR-0004 — PASKitHealth umbrella exclusion](docs/adr/ADR-0004-paskithealth-umbrella-exclusion.md), [ADR-0005 — PASKitAuth scope + umbrella exclusion](docs/adr/ADR-0005-paskitauth-scope-and-umbrella-exclusion.md). Per-module products + umbrella, iOS 18+ baseline, no design layer, thin vendor facades not abstract protocols, `os.Logger` over swift-log.
 
 ## Consumer checks
 
