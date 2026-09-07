@@ -33,6 +33,7 @@ Each module has a spec doc in `docs/` — the source of truth for what that modu
 | `PASKitNotifications` | [docs/PASKitNotifications.md](docs/PASKitNotifications.md) | UNUserNotificationCenter facade — delegate plumbing, observable authorization, schedule/cancel primitives, tap routing. Apps own scheduling policy, copy, and navigation. |
 | `PASKitSharing` | [docs/PASKitSharing.md](docs/PASKitSharing.md) | Share-card export — SwiftUI→image rendering, Instagram Stories hand-off, save-to-Photos, activity sheet, preview helpers. Apps own card designs, captions, and fallback policy. |
 | `PASKitHealth` | [docs/PASKitHealth.md](docs/PASKitHealth.md) | HealthKit facade — single store, availability, descriptor-driven authorization, honest write status, ungated reads, point-sample writes. Apps own data types, units, and copy. **Not part of the `PASKit` umbrella** — see [ADR-0004](docs/adr/ADR-0004-paskithealth-umbrella-exclusion.md). |
+| `PASKitAuth` | [docs/PASKitAuth.md](docs/PASKitAuth.md) | Firebase Auth facade — Sign in with Apple, anonymous accounts, guest linking in place, session restore, account deletion (`willDeleteAccount` runs before the account goes, so remote data can still be read). Apps own sign-in UI and copy. Apple only — no Google. **Not part of the `PASKit` umbrella** — see [ADR-0005](docs/adr/ADR-0005-paskitauth-scope-and-umbrella-exclusion.md). |
 
 ## Keeping Docs Current (mandatory)
 
