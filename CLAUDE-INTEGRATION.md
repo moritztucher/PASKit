@@ -22,7 +22,8 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 | `PASKitSharing` | Share-card export: `PASShareCard.render` (SwiftUI→`UIImage`), `PASInstagramStories.share`/`.copySticker`, `PASPhotoLibrary.save`, `PASShareItems` + `PASActivitySheet` (sheet + imperative `present`), `PASScaledCardPreview` + `PASTransparencyCheckerboard`. App owns card designs, captions, fallback policy. |
 | `PASKitHealth` | HealthKit facade: `PASHealth.shared.configure(permissions:)` / `.requestAuthorization()` (never throws) / `.authorizationRequestStatus()` / observable `.writeAuthorization` + `.writeAuthorization(for:)` (write-only — no read status exists, by design) / `.latestQuantitySample` / `.latestQuantity` / `.samples` / `.biologicalSex` / `.dateOfBirthComponents` / `.save` / `.saveQuantity` (throw). **Never in the `PASKit` umbrella** — add this product explicitly. App owns types, units, labels, icons, copy. |
 | `PASKitAuth` | Firebase Auth facade: `PASAuth.shared.configure(_:)` / observable `.uid` + `.isAnonymous` + `.isLinked` + `.isSignedIn` + `.isBusy` + `.isConfigured` + `.lastError` / `.restoreSession()` / `.signInAnonymouslyIfNeeded()` / `.prepareAppleSignIn()` + `.signInWithApple(authorization:)` (throwing, for `ASAuthorizationController`) / `.prepareAppleRequest(_:)` + `.completeAppleSignIn(_:)` (non-throwing, for SwiftUI's `SignInWithAppleButton`) / `.signOut()` / `.deleteAccount()` → `PASAccountDeletionResult`; `PASAuthDelegate` (all methods defaulted) for moving app data with the session; `PASFreshInstallGuard`. Sign in with Apple only — no Google. Needs a bundled `GoogleService-Info.plist`; without one it no-ops and the app runs signed-out. **Never in the `PASKit` umbrella** — add this product explicitly. App owns sign-in UI and copy. |
-| `PASKit` (umbrella) | Re-exports every module **except `PASKitHealth` and `PASKitAuth`** — one dependency line for the other six, `import` modules individually. Health and Auth always need their own explicit product dependency. |
+| `PASKitPush` | OneSignal facade (iOS only): `PASPush.shared.configure(PASPushConfig(appID:))` (consent required by default) / `.setConsent(_:)` / `.registerIfAuthorized()` (never prompts) / `.optIn` / `.optOut` / `.login(userID:)` / `.logout` / `.addTags` / `.removeTags`; observable `.isConfigured` + `.hasConsent` + `.isOptedIn` + `.subscriptionID` + `.userID`. Taps arrive through `PASNotifications.onResponse` (`isRemote == true`, OneSignal additional data flattened into `userInfo`). **Never in the `PASKit` umbrella** — add this product explicitly. App owns consent policy, tags, payload keys, the Notification Service Extension target. |
+| `PASKit` (umbrella) | Re-exports every module **except `PASKitHealth`, `PASKitAuth` and `PASKitPush`** — one dependency line for the other six, `import` modules individually. Health, Auth and Push always need their own explicit product dependency. |
 
 ## Conventions
 
@@ -545,6 +546,41 @@ authenticated, which is usually the only time that data is readable. Local wipe 
 the uid and the app usually migrates rather than loads. `isBusy` is raised when the request is
 *prepared*, not when it completes — the native Apple button has no start callback. Without a
 bundled plist every method no-ops and the app runs signed-out, deliberately.
+
+## Push — `PASPush`, not raw `OneSignal`
+
+**Add the `PASKitPush` product explicitly — it is never part of the `PASKit` umbrella** (see
+`docs/adr/ADR-0006-paskitpush-onesignal.md`). The app also needs the Push Notifications capability,
+Background Modes → Remote notifications, an App Group, and a `OneSignalNotificationServiceExtension`
+target linking OneSignal's `OneSignalExtension` product (the one sanctioned direct OneSignal use).
+Setup steps: `docs/PASKitPush.md`.
+
+```swift
+import PASKitNotifications
+import PASKitPush
+
+// At launch — PASNotifications first: it owns the delegate, OneSignal wraps it.
+PASNotifications.shared.configure()
+PASPush.shared.configure(.init(appID: AppKeys.oneSignal))   // nothing sent until setConsent(true)
+
+// One tap router for local AND OneSignal notifications:
+PASNotifications.shared.onResponse { response in
+    router.handle(destination: response.userInfo["destination"])   // OneSignal "additional data"
+}
+
+// Permission through PASNotifications; PASPush never prompts.
+if try await PASNotifications.shared.requestAuthorization() {
+    PASPush.shared.setConsent(true)          // app policy
+    PASPush.shared.registerIfAuthorized()    // also call at launch + foreground return
+}
+
+PASPush.shared.login(userID: uid)   // same id as PASPurchases.logIn / PASAnalytics.identify
+PASPush.shared.logout()             // sign-out; delete the OneSignal user server-side on account deletion
+```
+Rules: never register OneSignal's click listener — taps already reach `onResponse`, a listener
+routes them twice. Never call `OneSignal.*` from app code outside the service extension. Routing
+keys go in the message's additional data, string values only. Keep local reminders local; server
+push is for what the device cannot schedule itself.
 
 ## Health — `PASHealth`, not raw `HKHealthStore`
 
