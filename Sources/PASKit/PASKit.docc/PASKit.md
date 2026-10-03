@@ -6,7 +6,7 @@ Modular Swift Package for solo iOS founders and small studios shipping multiple 
 
 PASKit is one Swift Package, multiple modules. Each module is a thin, library-quality facade over the infrastructure every iOS app eventually needs — networking, keychain, reachability, logging, app metadata, rate prompts, what's-new sheets, changelog views, version checks, feedback forms, a generic analytics surface, and thin facades over RevenueCat, UNUserNotificationCenter, HealthKit, and share/export. Apps depend only on the modules they use.
 
-The umbrella `PASKit` module re-exports every submodule **except `PASKitHealth` and `PASKitAuth`**, so apps that take the umbrella product can `import PASKit` once for six of the eight modules. Apps that depend only on a specific module — or that use Health or accounts — import it directly. The umbrella re-exports every module that does not force a vendor SDK or a platform capability onto apps that do not use it; see <doc:HealthOverview> and <doc:AuthOverview> for the two that do.
+The umbrella `PASKit` module re-exports every submodule **except `PASKitHealth`, `PASKitAuth` and `PASKitPush`**, so apps that take the umbrella product can `import PASKit` once for six of the nine modules. Apps that depend only on a specific module — or that use Health, accounts or server push — import it directly. The umbrella re-exports every module that does not force a vendor SDK or a platform capability onto apps that do not use it; see <doc:HealthOverview>, <doc:AuthOverview> and <doc:PushOverview> for the three that do.
 
 ### Modules
 
@@ -42,3 +42,4 @@ PASKit is grown deliberately, not scaffolded upfront. A capability earns a place
 - <doc:SharingOverview>
 - <doc:HealthOverview>
 - <doc:AuthOverview>
+- <doc:PushOverview>
