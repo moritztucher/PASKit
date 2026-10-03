@@ -28,5 +28,10 @@
 // explicitly. See
 // docs/adr/ADR-0005-paskitauth-scope-and-umbrella-exclusion.md.
 //
-// The rule these two share: the umbrella re-exports every module that does not
+// PASKitPush is excluded likewise: it links the OneSignal SDK, and using it
+// needs the Push Notifications capability, an App Group and a Notification
+// Service Extension target. Apps with server push add the PASKitPush product
+// explicitly. See docs/adr/ADR-0006-paskitpush-onesignal.md.
+//
+// The rule these three share: the umbrella re-exports every module that does not
 // force a vendor SDK or a platform capability onto apps that do not use it.

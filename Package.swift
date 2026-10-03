@@ -24,6 +24,7 @@ let package = Package(
         .library(name: "PASKitSharing", targets: ["PASKitSharing"]),
         .library(name: "PASKitHealth", targets: ["PASKitHealth"]),
         .library(name: "PASKitAuth", targets: ["PASKitAuth"]),
+        .library(name: "PASKitPush", targets: ["PASKitPush"]),
     ],
     dependencies: [
         // Foundational
@@ -47,9 +48,13 @@ let package = Package(
         // verified there. Only FirebaseAuth is taken; Firestore and Analytics
         // stay the app's own dependency.
         .package(url: "https://github.com/firebase/firebase-ios-sdk", from: "11.15.0"),
+        // OneSignal — committed vendor for PASKitPush. iOS-only binary
+        // distribution; the target takes it on iOS alone so the package
+        // still builds for macOS.
+        .package(url: "https://github.com/OneSignal/OneSignal-XCFramework", from: "5.7.0"),
     ],
     targets: [
-        // PASKitHealth and PASKitAuth are deliberately not re-exported here.
+        // PASKitHealth, PASKitAuth and PASKitPush are deliberately not re-exported here.
         // Linking HealthKit makes App Store upload validation demand
         // NSHealthShareUsageDescription from every consumer, even one with no
         // Health feature — see
@@ -57,8 +62,11 @@ let package = Package(
         // the Firebase SDK into every consumer's binary and expects a bundled
         // GoogleService-Info.plist, which an account-less app has no reason to
         // carry — see
-        // docs/adr/ADR-0005-paskitauth-scope-and-umbrella-exclusion.md. Apps
-        // that use either take that product explicitly.
+        // docs/adr/ADR-0005-paskitauth-scope-and-umbrella-exclusion.md.
+        // PASKitPush links the OneSignal SDK and needs the Push Notifications
+        // capability plus a Notification Service Extension — see
+        // docs/adr/ADR-0006-paskitpush-onesignal.md. Apps that use any of
+        // them take that product explicitly.
         .target(
             name: "PASKit",
             dependencies: [
@@ -107,6 +115,18 @@ let package = Package(
             ]
         ),
         .target(
+            name: "PASKitPush",
+            dependencies: [
+                "PASKitCore",
+                "PASKitNotifications",
+                .product(
+                    name: "OneSignalFramework",
+                    package: "OneSignal-XCFramework",
+                    condition: .when(platforms: [.iOS])
+                ),
+            ]
+        ),
+        .target(
             name: "PASKitPurchases",
             dependencies: [
                 "PASKitCore",
@@ -150,6 +170,12 @@ let package = Package(
         .testTarget(
             name: "PASKitAuthTests",
             dependencies: ["PASKitAuth"]
+        ),
+        // Covers PASKitPush's SDK-free logic — unwrapping OneSignal's payload
+        // envelope into the routing keys PASNotifications hands the app.
+        .testTarget(
+            name: "PASKitPushTests",
+            dependencies: ["PASKitPush"]
         ),
     ],
     swiftLanguageModes: [.v6]
