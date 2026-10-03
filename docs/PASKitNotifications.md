@@ -32,7 +32,7 @@ PASKit owns the mechanism; each app owns its vocabulary: when to schedule, the c
 ## Out of scope
 
 - **When/what to send** — scheduling policy ("8pm if not opened today, cancel on open"), copy, and journey logic are app domain. The module ships primitives only.
-- **Remote push** — APNs registration, FCM, OneSignal. A per-app decision (XueTang defers it to R5 per its D-16). The delegate already routes taps on remote notifications, so a provider can be added later without changing this surface.
+- **Remote push** — lives in `PASKitPush` (OneSignal, see [ADR-0006](adr/ADR-0006-paskitpush-onesignal.md)). This module keeps the delegate: remote taps arrive through the same `onResponse`, flagged `isRemote`, with a provider's nested payload flattened by a `PASNotificationPayload` unwrapper.
 - **Notification categories / custom actions** — `PASNotificationResponse.actionID` already carries custom action identifiers, but category registration lands when the first app ships action buttons.
 - **Time-sensitive / critical interruption levels** — require entitlements; added when the first app carries one.
 
@@ -48,5 +48,5 @@ PASKit owns the mechanism; each app owns its vocabulary: when to schedule, the c
 ## Future work
 
 - [ ] Notification categories + action buttons — when the first app ships them.
-- [ ] Remote-push registration hook (APNs token surface) — when the first app adopts server-side push (XueTang R5 candidate, per its D-16).
+- [x] Remote-push seam — `PASNotificationPayload.registerUnwrapper(_:)` + `PASNotificationResponse.isRemote`, consumed by `PASKitPush` (2026-10-02).
 - [ ] Time-sensitive interruption level — when the first app carries the entitlement.
