@@ -25,6 +25,7 @@ let package = Package(
         .library(name: "PASKitHealth", targets: ["PASKitHealth"]),
         .library(name: "PASKitAuth", targets: ["PASKitAuth"]),
         .library(name: "PASKitPush", targets: ["PASKitPush"]),
+        .library(name: "PASKitPurchasesUI", targets: ["PASKitPurchasesUI"]),
     ],
     dependencies: [
         // Foundational
@@ -40,7 +41,8 @@ let package = Package(
         // DocC — enables `swift package generate-documentation`. No catalog
         // shipped; inline `///` comments drive the docs.
         .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.4.0"),
-        // RevenueCat — committed vendor for PASKitPurchases.
+        // RevenueCat — committed vendor for PASKitPurchases (RevenueCat) and
+        // PASKitPurchasesUI (RevenueCatUI, the dashboard-rendered paywall).
         .package(url: "https://github.com/RevenueCat/purchases-ios-spm.git", from: "5.67.0"),
         // Firebase — committed vendor for PASKitAuth. Pinned to the studio's
         // known-good major: 11.x is what XueTang ships the donor implementation
@@ -65,8 +67,11 @@ let package = Package(
         // docs/adr/ADR-0005-paskitauth-scope-and-umbrella-exclusion.md.
         // PASKitPush links the OneSignal SDK and needs the Push Notifications
         // capability plus a Notification Service Extension — see
-        // docs/adr/ADR-0006-paskitpush-onesignal.md. Apps that use any of
-        // them take that product explicitly.
+        // docs/adr/ADR-0006-paskitpush-onesignal.md. PASKitPurchasesUI links
+        // RevenueCatUI, a UI framework with its own resources that an app
+        // drawing its own paywall has no use for — see
+        // docs/adr/ADR-0007-paskitpurchasesui-hosted-paywall.md. Apps that
+        // use any of them take that product explicitly.
         .target(
             name: "PASKit",
             dependencies: [
@@ -131,6 +136,14 @@ let package = Package(
             dependencies: [
                 "PASKitCore",
                 .product(name: "RevenueCat", package: "purchases-ios-spm"),
+            ]
+        ),
+        .target(
+            name: "PASKitPurchasesUI",
+            dependencies: [
+                "PASKitPurchases",
+                .product(name: "RevenueCat", package: "purchases-ios-spm"),
+                .product(name: "RevenueCatUI", package: "purchases-ios-spm"),
             ]
         ),
         // Tests cover PASKitCore's pure, deterministic logic — streak engine,
