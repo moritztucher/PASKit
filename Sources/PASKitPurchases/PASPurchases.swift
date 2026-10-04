@@ -94,6 +94,23 @@ public final class PASPurchases {
         try await offerings().offering(identifier: identifier)
     }
 
+    /// The offering the dashboard's targeting assigns to a placement, else
+    /// the current offering. Placements let one app serve a different
+    /// paywall per moment (onboarding, a locked feature, settings) and run
+    /// experiments per moment without an app update; the app owns the
+    /// placement identifiers. A placement the dashboard explicitly maps to
+    /// "no offering" also falls back to the current one.
+    public func offering(forPlacement placementID: String) async throws -> Offering? {
+        let all = try await offerings()
+        return all.currentOffering(forPlacement: placementID) ?? all.current
+    }
+
+    /// Typed variant for the app's `String`-backed placement enum.
+    public func offering<P: RawRepresentable>(forPlacement placement: P) async throws -> Offering?
+    where P.RawValue == String {
+        try await offering(forPlacement: placement.rawValue)
+    }
+
     /// Store products by product ID — for products purchased outside an
     /// offering (e.g. consumable credit packs addressed directly).
     public func products(_ productIDs: [String]) async throws -> [StoreProduct] {

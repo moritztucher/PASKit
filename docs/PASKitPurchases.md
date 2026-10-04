@@ -2,7 +2,7 @@
 
 > **Status: Shipped.** Built when XueTang V2 became the first consuming app to take payment (premium subscription + consumable coin packs).
 
-**Dependencies:** `RevenueCat` SDK (`purchases-ios-spm`, from 5.67.0) + `PASKitCore`. `RevenueCatUI` is **not** linked — it joins the module if/when an app wants the hosted paywall (see below).
+**Dependencies:** `RevenueCat` SDK (`purchases-ios-spm`, from 5.67.0) + `PASKitCore`. `RevenueCatUI` is **not** linked here — the hosted paywall is the separate `PASKitPurchasesUI` product ([spec](PASKitPurchasesUI.md), [ADR-0007](adr/ADR-0007-paskitpurchasesui-hosted-paywall.md)).
 
 ## Purpose
 
@@ -20,6 +20,7 @@ A thin, concrete wrapper over RevenueCat — configuration, live entitlement sta
 | `purchase(_ package:)` / `purchase(_ product:)` → `PASPurchaseResult` | Purchase flow; result carries `customerInfo`, `transaction`, `userCancelled`. |
 | `restorePurchases()` | Wire to an explicit "Restore Purchases" control (App Review requirement). |
 | `logIn(userId:)` / `logOut()` | Identity. **Shares one identity with `PASKitAnalytics`** — pass the same app-supplied user ID to both so revenue and analytics join on one key (convention, not code coupling — the modules stay independent). |
+| `offering(forPlacement:)` | Offering the dashboard targeting assigns to a placement, else `current`. Placement IDs are app vocabulary (typed `String`-enum overload). Used by `PASKitPurchasesUI`; works for custom paywalls too. |
 | `offering(firstOf:)` | Offering fallback chain: first existing identifier, else `currentOffering()` — the "campaign offering, else default" pattern. |
 | `StoreProduct.pasSavingsPercent(comparedToMonthly:)` / `PASPricingMath.savingsPercent` | Honest savings-%: yearly per-month price against the **live** monthly price, so the badge stays correct per storefront and after price changes. `nil` when ≤ 0 — never a "save 0%" badge. Pure math is public for tests. |
 | `Package.pasHasFreeTrial` / `StoreProduct.pasHasFreeTrial` | Intro offer is a free trial — drives "Start N-day free trial" CTAs and fine print. |
@@ -33,7 +34,7 @@ A thin, concrete wrapper over RevenueCat — configuration, live entitlement sta
 
 ## Design decisions
 
-- **Custom-paywall-first.** The original spec planned hosted-paywall-only. The first real consumer (XueTang V2) ships a locked, custom-designed paywall — so the module's surface is the purchase *flow* (offerings → purchase → entitlement), not paywall rendering. **Hosted paywall (`RevenueCatUI`) is deferred** until the first app wants the dashboard-rendered paywall; it will land as an additive presentation helper without changing the flow surface.
+- **Custom-paywall-first.** The original spec planned hosted-paywall-only. The first real consumer (XueTang V2) ships a locked, custom-designed paywall — so the module's surface is the purchase *flow* (offerings → purchase → entitlement), not paywall rendering. The hosted paywall (`RevenueCatUI`) landed in 0.7.0 as the separate `PASKitPurchasesUI` product when XueTang moved its paywall into the dashboard; the flow surface here did not change.
 - **No vendor abstraction.** RevenueCat types pass through. Apps `import PASKitPurchases` and use `Package` / `CustomerInfo` directly.
 - **Entitlements as app vocabulary.** The module takes `String`-backed enums; entitlement IDs live in the app.
 - **Unified identity.** `PASPurchases.logIn` and `PASAnalytics.identify` consume the same app-supplied user ID — by documented convention, not a cross-module dependency.
@@ -47,5 +48,5 @@ A thin, concrete wrapper over RevenueCat — configuration, live entitlement sta
 
 ## Future work
 
-- [ ] Hosted-paywall presentation helper (`RevenueCatUI`) — when the first app wants it.
+- [x] Hosted-paywall presentation helper (`RevenueCatUI`) — shipped as `PASKitPurchasesUI` (0.7.0).
 - [ ] Promo-code / win-back offer helpers — when the first app runs them.

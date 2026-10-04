@@ -4,7 +4,7 @@ Thin facade over the RevenueCat SDK. PASKit owns the mechanism (`configure`, cus
 
 ## API
 
-- `PASPurchases` — `@MainActor @Observable` singleton (`PASPurchases.shared`). Observable `customerInfo` kept live via RevenueCat's customer-info stream; `isEntitled(_:)` accepts a raw `String` or any `String`-backed enum. `offering(firstOf:)` is the "campaign offering, else default" fallback chain.
+- `PASPurchases` — `@MainActor @Observable` singleton (`PASPurchases.shared`). Observable `customerInfo` kept live via RevenueCat's customer-info stream; `isEntitled(_:)` accepts a raw `String` or any `String`-backed enum. `offering(firstOf:)` is the "campaign offering, else default" fallback chain; `offering(forPlacement:)` resolves a dashboard placement to its offering, else the current one.
 - `PASPurchasesConfig` — config struct passed to `configure` (`apiKey` (public SDK key), `appUserID`, `debugLogs`).
 - `PASPurchaseResult` — named result of `purchase` (`customerInfo`, `transaction`, `userCancelled`).
 - `PASPaywallFlow` — `@Observable` purchase/restore state machine for app-owned paywall UI: `isPurchasing`, `errorMessage` + alert-friendly `isShowingError` binding, user-cancel swallowed silently, `nil`-package → unreachable message, clean-but-unentitled restore → "no purchase found". Writes no app state — gate on `customerInfo`.
@@ -42,4 +42,4 @@ let outcome = try await PASPurchases.shared.purchase(products[0])
 - **Entitlement state**: gate on `customerInfo.entitlements[…]?.isActive` (via `isEntitled`) — never cache a boolean. The stream keeps it current across renewals, refunds, and other-device purchases.
 - **Identity**: pass the same user ID to `logIn(userId:)` and `PASAnalytics.identify(userId:)` so revenue and analytics join on one key.
 - **Virtual currency**: RevenueCat's server-side Virtual Currencies need a backend (secret key) to debit. Backend-less apps sell consumable products through `purchase` and keep the wallet client-side.
-- **Hosted paywall** (`RevenueCatUI`): not part of this module yet — added when the first app wants the dashboard-rendered paywall instead of its own UI.
+- **Hosted paywall** (`RevenueCatUI`): lives in the separate `PASKitPurchasesUI` product (`PASPaywallView`), so apps with their own paywall UI never link RevenueCatUI.
