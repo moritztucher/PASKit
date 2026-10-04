@@ -50,4 +50,4 @@ try await PASPurchases.shared.logOut()
 
 ## Paywall logic, not UI
 
-PASKit ships the pricing *math* — `PASPaywallFlow` and helpers like `pasSavingsPercent` for "save 40%" badges — but no paywall rendering. The first consuming app ships a custom-designed paywall; the hosted RevenueCat paywall (`RevenueCatUI`) is deferred until an app actually wants it.
+PASKit ships the pricing *math* — `PASPaywallFlow` and helpers like `pasSavingsPercent` for "save 40%" badges — for apps that draw their own paywall. Apps that design the paywall in the RevenueCat dashboard instead link the separate `PASKitPurchasesUI` product: `PASPaywallView` renders the dashboard paywall for a placement (`PASPurchases.offering(forPlacement:)`) and reports `onEntitled` / `onClose`. It is not part of the umbrella, because it links `RevenueCatUI`.
