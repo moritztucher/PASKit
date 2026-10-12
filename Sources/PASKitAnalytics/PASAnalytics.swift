@@ -75,6 +75,31 @@ public final class PASAnalytics {
         PostHogSDK.shared.identify(userId, userProperties: traits)
     }
 
+    /// `identify`, but first `reset` when this install is already identified
+    /// as a *different* user. PostHog ignores `identify` on an identified
+    /// install, so without this an install that carries an older user ID
+    /// (an earlier app version's own ID scheme, an account switch that
+    /// skipped `reset`) keeps reporting under that ID forever. An anonymous
+    /// install is identified directly, so its pre-sign-in events still merge
+    /// into the person.
+    ///
+    /// "Identified" is read as the current distinct ID differing from the
+    /// anonymous ID, which holds while `reuseAnonymousId` is off (PASKit's
+    /// default).
+    public func identifyReplacingPreviousUser(userId: String, traits: [String: Any]? = nil) {
+        let sdk = PostHogSDK.shared
+        let current = sdk.getDistinctId()
+        if current != userId, current != sdk.getAnonymousId() {
+            sdk.reset()
+        }
+        sdk.identify(userId, userProperties: traits)
+    }
+
+    /// The distinct ID events are currently sent under.
+    public var distinctId: String {
+        PostHogSDK.shared.getDistinctId()
+    }
+
     /// Register super-properties — sent with every subsequent event.
     public func register(_ properties: [String: Any]) {
         PostHogSDK.shared.register(properties)
