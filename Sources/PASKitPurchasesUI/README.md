@@ -4,7 +4,8 @@ The RevenueCat dashboard-designed paywall (`RevenueCatUI`) for a placement, redu
 
 ## API
 
-- `PASPaywallView` — SwiftUI view. `init(placementID:entitlementID:displayCloseButton:fonts:onEntitled:onClose:)`, plus a typed `init(placement:entitlement:…)` for the app's `String`-backed enums. Resolves the offering through `PASPurchases.offering(forPlacement:)` (falling back to the current offering, then to RevenueCat's own current-offering paywall if the lookup fails). `onEntitled` fires once a purchase or restore leaves the entitlement active; `onClose` when the paywall asks to be dismissed without it. Exactly one fires per presentation. Never dismisses itself, so it works embedded (a non-swipeable paywall) and in a `.sheet`.
+- `PASPaywallEntitlement` — `.purchased(CustomerInfo)` / `.restored(CustomerInfo)`, with a `customerInfo` accessor.
+- `PASPaywallView` — SwiftUI view. `init(placementID:entitlementID:displayCloseButton:fonts:onEntitled:onClose:)`, plus a typed `init(placement:entitlement:…)` for the app's `String`-backed enums. Resolves the offering through `PASPurchases.offering(forPlacement:)` (falling back to the current offering, then to RevenueCat's own current-offering paywall if the lookup fails). `onEntitled` fires once a purchase or restore leaves the entitlement active; `onClose` when the paywall asks to be dismissed without it. `onEntitlement:` in place of `onEntitled:` reports a `PASPaywallEntitlement` (`.purchased` / `.restored`, each with the `CustomerInfo`). Exactly one fires per presentation. Never dismisses itself, so it works embedded (a non-swipeable paywall) and in a `.sheet`.
 
 ## Example
 
