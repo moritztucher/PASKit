@@ -13,6 +13,22 @@ import RevenueCat
 import RevenueCatUI
 import SwiftUI
 
+/// How a `PASPaywallView` presentation left the entitlement active, with
+/// the `CustomerInfo` RevenueCat reported for it. Lets an app tell a new
+/// purchase (and, from the entitlement's `periodType`, a trial start) apart
+/// from a restore, e.g. for analytics.
+@available(tvOS, unavailable)
+public enum PASPaywallEntitlement {
+    case purchased(CustomerInfo)
+    case restored(CustomerInfo)
+
+    public var customerInfo: CustomerInfo {
+        switch self {
+        case .purchased(let info), .restored(let info): info
+        }
+    }
+}
+
 /// Renders the RevenueCat paywall attached to the offering a placement
 /// resolves to (`PASPurchases.offering(forPlacement:)`, falling back to the
 /// current offering).
@@ -33,7 +49,8 @@ import SwiftUI
 /// Exactly one of the two fires per presentation. The view never dismisses
 /// itself: the caller decides what each outcome means, which is what lets it
 /// be embedded directly (a non-swipeable "hard" paywall) as well as shown in
-/// a `.sheet`.
+/// a `.sheet`. Pass `onEntitlement:` instead of `onEntitled:` to learn
+/// whether the entitlement came from a purchase or a restore.
 @available(tvOS, unavailable)
 public struct PASPaywallView: View {
 
@@ -41,7 +58,7 @@ public struct PASPaywallView: View {
     private let entitlementID: String
     private let displayCloseButton: Bool
     private let fonts: PaywallFontProvider
-    private let onEntitled: () -> Void
+    private let onEntitlement: (PASPaywallEntitlement) -> Void
     private let onClose: () -> Void
 
     @State private var phase: Phase = .loading
@@ -64,6 +81,25 @@ public struct PASPaywallView: View {
     ///   - displayCloseButton: Whether RevenueCat adds its close button.
     ///     Keep it on for an embedded paywall — it is the only way out.
     ///   - fonts: Custom fonts for paywalls that use the app's typeface.
+    ///   - onEntitlement: Fires once, with how the entitlement became
+    ///     active.
+    public init(
+        placementID: String?,
+        entitlementID: String,
+        displayCloseButton: Bool = true,
+        fonts: PaywallFontProvider = DefaultPaywallFontProvider(),
+        onEntitlement: @escaping (PASPaywallEntitlement) -> Void,
+        onClose: @escaping () -> Void
+    ) {
+        self.placementID = placementID
+        self.entitlementID = entitlementID
+        self.displayCloseButton = displayCloseButton
+        self.fonts = fonts
+        self.onEntitlement = onEntitlement
+        self.onClose = onClose
+    }
+
+    /// Variant for callers that only need to know the entitlement is active.
     public init(
         placementID: String?,
         entitlementID: String,
@@ -72,12 +108,24 @@ public struct PASPaywallView: View {
         onEntitled: @escaping () -> Void,
         onClose: @escaping () -> Void
     ) {
-        self.placementID = placementID
-        self.entitlementID = entitlementID
-        self.displayCloseButton = displayCloseButton
-        self.fonts = fonts
-        self.onEntitled = onEntitled
-        self.onClose = onClose
+        self.init(placementID: placementID, entitlementID: entitlementID,
+                  displayCloseButton: displayCloseButton, fonts: fonts,
+                  onEntitlement: { _ in onEntitled() }, onClose: onClose)
+    }
+
+    /// Typed variant for the app's `String`-backed placement and
+    /// entitlement enums, reporting how the entitlement became active.
+    public init<P: RawRepresentable, E: RawRepresentable>(
+        placement: P,
+        entitlement: E,
+        displayCloseButton: Bool = true,
+        fonts: PaywallFontProvider = DefaultPaywallFontProvider(),
+        onEntitlement: @escaping (PASPaywallEntitlement) -> Void,
+        onClose: @escaping () -> Void
+    ) where P.RawValue == String, E.RawValue == String {
+        self.init(placementID: placement.rawValue, entitlementID: entitlement.rawValue,
+                  displayCloseButton: displayCloseButton, fonts: fonts,
+                  onEntitlement: onEntitlement, onClose: onClose)
     }
 
     /// Typed variant for the app's `String`-backed placement and
@@ -97,9 +145,9 @@ public struct PASPaywallView: View {
 
     public var body: some View {
         content
-            .onPurchaseCompleted { info in finishIfEntitled(info) }
-            .onRestoreCompleted { info in finishIfEntitled(info) }
-            .onRequestedDismissal { finish(entitled: false) }
+            .onPurchaseCompleted { info in finishIfEntitled(.purchased(info)) }
+            .onRestoreCompleted { info in finishIfEntitled(.restored(info)) }
+            .onRequestedDismissal { finish(nil) }
             .task { await load() }
     }
 
@@ -136,14 +184,15 @@ public struct PASPaywallView: View {
     /// A completed restore does not imply an entitlement; a clean restore
     /// with nothing to restore leaves the paywall up (RevenueCat shows its
     /// own "nothing found" message).
-    private func finishIfEntitled(_ info: CustomerInfo) {
-        guard info.entitlements[entitlementID]?.isActive == true else { return }
-        finish(entitled: true)
+    private func finishIfEntitled(_ outcome: PASPaywallEntitlement) {
+        guard outcome.customerInfo.entitlements[entitlementID]?.isActive == true else { return }
+        finish(outcome)
     }
 
-    private func finish(entitled: Bool) {
+    /// `nil` reports a close.
+    private func finish(_ outcome: PASPaywallEntitlement?) {
         guard !isFinished else { return }
         isFinished = true
-        if entitled { onEntitled() } else { onClose() }
+        if let outcome { onEntitlement(outcome) } else { onClose() }
     }
 }
