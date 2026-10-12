@@ -15,6 +15,8 @@ PASKit owns the generic **mechanism**:
 - `setup(_:)` — configure PostHog from `PASAnalyticsConfig`. API key injected, never read from Info.plist.
 - `capture(_:properties:)` / `screen(_:properties:)` — generic event + screen surface.
 - `identify(userId:traits:)` / `register(_:)` / `reset()` — identity, super-properties, logout.
+- `identifyReplacingPreviousUser(userId:traits:)` — `identify` that first resets an install already identified as a different user (PostHog ignores `identify` there), e.g. an app update whose earlier version identified with its own ID scheme. (0.7.2)
+- `distinctId` — the distinct ID events are currently sent under. (0.7.2)
 - `optIn()` / `optOut()` / `flush()` — consent + lifecycle.
 - `isFeatureEnabled(_:)` / `featureFlagPayload(_:)` — feature-flag reads.
 
@@ -41,6 +43,8 @@ public final class PASAnalytics {
     public func screen(_ name: String, properties: [String: Any]? = nil)
     public func identify(userId: String, traits: [String: Any]? = nil)
     public func register(_ properties: [String: Any])
+    public func identifyReplacingPreviousUser(userId: String, traits: [String: Any]? = nil)
+    public var distinctId: String { get }
     public func reset()
     public func optIn()
     public func optOut()
