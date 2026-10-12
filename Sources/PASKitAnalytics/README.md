@@ -1,6 +1,6 @@
 # PASKitAnalytics
 
-Thin facade over `PostHogSDK`. PASKit owns the mechanism (`setup`, `capture`, `identify`, `register`, `reset`, `optIn`/`optOut`, `flush`, feature flags); apps own their event vocabulary as an extension on `PASAnalytics`.
+Thin facade over `PostHogSDK`. PASKit owns the mechanism (`setup`, `capture`, `identify`, `identifyReplacingPreviousUser`, `distinctId`, `register`, `reset`, `optIn`/`optOut`, `flush`, feature flags); apps own their event vocabulary as an extension on `PASAnalytics`.
 
 ## API
 
