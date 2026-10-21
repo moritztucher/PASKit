@@ -10,7 +10,7 @@
 
 ## What it is
 
-One Swift Package, multiple modules. Each module is a thin, library-quality facade over the infrastructure every iOS app eventually needs — networking, keychain, reachability, logging, app metadata, observable settings, calendar/streak math, App Group storage; rate prompts, onboarding, what's-new, changelog, feedback, toasts, dev menus; and facades over RevenueCat, PostHog, UNUserNotificationCenter, HealthKit, and share/export. Built and extracted from production apps over 12 months. Apps depend only on what they use.
+One Swift Package, multiple modules. Each module is a thin, library-quality facade over the infrastructure every iOS app eventually needs — networking, keychain, reachability, logging, app metadata, observable settings, calendar/streak math, App Group storage; rate prompts, onboarding, what's-new, changelog, feedback, toasts, dev menus; and facades over RevenueCat, PostHog, Sentry, UNUserNotificationCenter, HealthKit, and share/export. Built and extracted from production apps over 12 months. Apps depend only on what they use.
 
 ## Who it's for
 
@@ -57,8 +57,9 @@ One Swift package, one library product per module — an app imports only what i
 | `PASKitAuth` | Built | Firebase Auth facade — Sign in with Apple, anonymous accounts, guest linking, deletion with the ordering it needs; app owns sign-in UI + copy. **Not in the umbrella** — link the product explicitly | [docs/PASKitAuth.md](docs/PASKitAuth.md) |
 | `PASKitPush` | Built | OneSignal facade — consent-gated remote push, identity joined with purchases/analytics; taps stay with `PASNotifications`. iOS only. **Not in the umbrella** — link the product explicitly | [docs/PASKitPush.md](docs/PASKitPush.md) |
 | `PASKitPurchasesUI` | Built | The RevenueCat dashboard-designed paywall (`RevenueCatUI`) per placement, reduced to entitled / closed outcomes; app owns placements and timing. **Not in the umbrella** — link the product explicitly | [docs/PASKitPurchasesUI.md](docs/PASKitPurchasesUI.md) |
+| `PASKitCrash` | Built | Sentry facade: consent-gated crash and error reporting (never started before consent), hardcoded privacy floor (no PII, screenshots, replay or network breadcrumbs); app owns consent policy, DSN, dSYM upload. **Not in the umbrella**: link the product explicitly | [docs/PASKitCrash.md](docs/PASKitCrash.md) |
 
-Modules are built on first real need, not scaffolded up front. `PASKitHealth`, `PASKitAuth`, `PASKitPush` and `PASKitPurchasesUI` are the four modules the umbrella does not re-export — each would force a vendor SDK or a platform capability onto apps that do not use it. See [ADR-0004](docs/adr/ADR-0004-paskithealth-umbrella-exclusion.md) [ADR-0005](docs/adr/ADR-0005-paskitauth-scope-and-umbrella-exclusion.md) [ADR-0006](docs/adr/ADR-0006-paskitpush-onesignal.md) and [ADR-0007](docs/adr/ADR-0007-paskitpurchasesui-hosted-paywall.md).
+Modules are built on first real need, not scaffolded up front. `PASKitHealth`, `PASKitAuth`, `PASKitPush`, `PASKitPurchasesUI` and `PASKitCrash` are the five modules the umbrella does not re-export — each would force a vendor SDK or a platform capability onto apps that do not use it. See [ADR-0004](docs/adr/ADR-0004-paskithealth-umbrella-exclusion.md) [ADR-0005](docs/adr/ADR-0005-paskitauth-scope-and-umbrella-exclusion.md) [ADR-0006](docs/adr/ADR-0006-paskitpush-onesignal.md) [ADR-0007](docs/adr/ADR-0007-paskitpurchasesui-hosted-paywall.md) and [ADR-0008](docs/adr/ADR-0008-paskitcrash-sentry.md).
 
 ## Quick tour
 
@@ -134,7 +135,7 @@ extension PASAnalytics {
 
 ## Architecture decisions
 
-Linked: [ADR-0001 — PASKit reconciliation](docs/adr/ADR-0001-paskit-dashboard-reconciliation.md), [ADR-0002 — symbol-collision detector](docs/adr/ADR-0002-symbol-collision-detector.md), [ADR-0003 — error copy is app vocabulary](docs/adr/ADR-0003-error-copy-is-app-vocabulary.md), [ADR-0004 — PASKitHealth umbrella exclusion](docs/adr/ADR-0004-paskithealth-umbrella-exclusion.md), [ADR-0005 — PASKitAuth scope + umbrella exclusion](docs/adr/ADR-0005-paskitauth-scope-and-umbrella-exclusion.md), [ADR-0006 — PASKitPush (OneSignal)](docs/adr/ADR-0006-paskitpush-onesignal.md), [ADR-0007 — PASKitPurchasesUI (hosted paywall)](docs/adr/ADR-0007-paskitpurchasesui-hosted-paywall.md). Per-module products + umbrella, iOS 18+ baseline, no design layer, thin vendor facades not abstract protocols, `os.Logger` over swift-log.
+Linked: [ADR-0001 — PASKit reconciliation](docs/adr/ADR-0001-paskit-dashboard-reconciliation.md), [ADR-0002 — symbol-collision detector](docs/adr/ADR-0002-symbol-collision-detector.md), [ADR-0003 — error copy is app vocabulary](docs/adr/ADR-0003-error-copy-is-app-vocabulary.md), [ADR-0004 — PASKitHealth umbrella exclusion](docs/adr/ADR-0004-paskithealth-umbrella-exclusion.md), [ADR-0005 — PASKitAuth scope + umbrella exclusion](docs/adr/ADR-0005-paskitauth-scope-and-umbrella-exclusion.md), [ADR-0006 — PASKitPush (OneSignal)](docs/adr/ADR-0006-paskitpush-onesignal.md), [ADR-0007 — PASKitPurchasesUI (hosted paywall)](docs/adr/ADR-0007-paskitpurchasesui-hosted-paywall.md), [ADR-0008: PASKitCrash (Sentry)](docs/adr/ADR-0008-paskitcrash-sentry.md). Per-module products + umbrella, iOS 18+ baseline, no design layer, thin vendor facades not abstract protocols, `os.Logger` over swift-log.
 
 ## Consumer checks
 
