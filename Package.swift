@@ -26,6 +26,7 @@ let package = Package(
         .library(name: "PASKitAuth", targets: ["PASKitAuth"]),
         .library(name: "PASKitPush", targets: ["PASKitPush"]),
         .library(name: "PASKitPurchasesUI", targets: ["PASKitPurchasesUI"]),
+        .library(name: "PASKitCrash", targets: ["PASKitCrash"]),
     ],
     dependencies: [
         // Foundational
@@ -54,9 +55,13 @@ let package = Package(
         // distribution; the target takes it on iOS alone so the package
         // still builds for macOS.
         .package(url: "https://github.com/OneSignal/OneSignal-XCFramework", from: "5.7.0"),
+        // Sentry — committed vendor for PASKitCrash. The `Sentry` product is
+        // the pre-built static framework: fastest app start, no source
+        // compile under Swift 6 mode.
+        .package(url: "https://github.com/getsentry/sentry-cocoa", from: "9.30.2"),
     ],
     targets: [
-        // PASKitHealth, PASKitAuth and PASKitPush are deliberately not re-exported here.
+        // PASKitHealth, PASKitAuth, PASKitPush, PASKitPurchasesUI and PASKitCrash are deliberately not re-exported here.
         // Linking HealthKit makes App Store upload validation demand
         // NSHealthShareUsageDescription from every consumer, even one with no
         // Health feature — see
@@ -70,8 +75,12 @@ let package = Package(
         // docs/adr/ADR-0006-paskitpush-onesignal.md. PASKitPurchasesUI links
         // RevenueCatUI, a UI framework with its own resources that an app
         // drawing its own paywall has no use for — see
-        // docs/adr/ADR-0007-paskitpurchasesui-hosted-paywall.md. Apps that
-        // use any of them take that product explicitly.
+        // docs/adr/ADR-0007-paskitpurchasesui-hosted-paywall.md. PASKitCrash links
+        // Sentry, which ships its crash handler and its own PrivacyInfo.xcprivacy
+        // into every consumer, forcing crash data into App Store privacy labels
+        // even for an app that never starts the SDK — see
+        // docs/adr/ADR-0008-paskitcrash-sentry.md. Apps that use any of them
+        // take that product explicitly.
         .target(
             name: "PASKit",
             dependencies: [
@@ -146,6 +155,13 @@ let package = Package(
                 .product(name: "RevenueCatUI", package: "purchases-ios-spm"),
             ]
         ),
+        .target(
+            name: "PASKitCrash",
+            dependencies: [
+                "PASKitCore",
+                .product(name: "Sentry", package: "sentry-cocoa"),
+            ]
+        ),
         // Tests cover PASKitCore's pure, deterministic logic — streak engine,
         // calendar math, duration formatting, cURL rendering, settings
         // round-trips, error domain. All Foundation-only, so they run on the
@@ -189,6 +205,13 @@ let package = Package(
         .testTarget(
             name: "PASKitPushTests",
             dependencies: ["PASKitPush"]
+        ),
+        // Covers PASKitCrash's privacy floor — builds the Sentry options and
+        // asserts every hardcoded flag — plus the not-running no-ops. Never
+        // starts the SDK.
+        .testTarget(
+            name: "PASKitCrashTests",
+            dependencies: ["PASKitCrash"]
         ),
     ],
     swiftLanguageModes: [.v6]

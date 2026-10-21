@@ -4,9 +4,9 @@ Modular Swift Package for solo iOS founders and small studios shipping multiple 
 
 ## Overview
 
-PASKit is one Swift Package, multiple modules. Each module is a thin, library-quality facade over the infrastructure every iOS app eventually needs — networking, keychain, reachability, logging, app metadata, rate prompts, what's-new sheets, changelog views, version checks, feedback forms, a generic analytics surface, and thin facades over RevenueCat, UNUserNotificationCenter, HealthKit, and share/export. Apps depend only on the modules they use.
+PASKit is one Swift Package, multiple modules. Each module is a thin, library-quality facade over the infrastructure every iOS app eventually needs — networking, keychain, reachability, logging, app metadata, rate prompts, what's-new sheets, changelog views, version checks, feedback forms, a generic analytics surface, and thin facades over RevenueCat, Sentry, UNUserNotificationCenter, HealthKit, and share/export. Apps depend only on the modules they use.
 
-The umbrella `PASKit` module re-exports every submodule **except `PASKitHealth`, `PASKitAuth`, `PASKitPush` and `PASKitPurchasesUI`**, so apps that take the umbrella product can `import PASKit` once for six of the ten modules. Apps that depend only on a specific module — or that use Health, accounts, server push or the dashboard paywall — import it directly. The umbrella re-exports every module that does not force a vendor SDK or a platform capability onto apps that do not use it; see <doc:HealthOverview>, <doc:AuthOverview>, <doc:PushOverview> and <doc:PurchasesOverview> for the four that do.
+The umbrella `PASKit` module re-exports every submodule **except `PASKitHealth`, `PASKitAuth`, `PASKitPush`, `PASKitPurchasesUI` and `PASKitCrash`**, so apps that take the umbrella product can `import PASKit` once for six of the eleven modules. Apps that depend only on a specific module — or that use Health, accounts, server push, the dashboard paywall or crash reporting — import it directly. The umbrella re-exports every module that does not force a vendor SDK or a platform capability onto apps that do not use it; see <doc:HealthOverview>, <doc:AuthOverview>, <doc:PushOverview>, <doc:PurchasesOverview> and <doc:CrashOverview> for the five that do.
 
 ### Modules
 
@@ -18,6 +18,7 @@ The umbrella `PASKit` module re-exports every submodule **except `PASKitHealth`,
 - **PASKitSharing** — share-card export: `PASShareCard.render`, `PASInstagramStories`, `PASPhotoLibrary`, `PASActivitySheet`. Apps own card designs and captions.
 - **PASKitAuth** — thin Firebase Auth facade: `PASAuth.shared.configure(_:)` / observable `uid` + `isSignedIn` + `isLinked` / `prepareAppleSignIn()` + `signInWithApple(authorization:)` / `signOut()` / `deleteAccount()`, plus `PASAuthDelegate` for moving app data with the session. Sign in with Apple only. **Not in the umbrella** — link the product explicitly.
 - **PASKitHealth** — thin HealthKit facade: `PASHealth.shared.configure(permissions:)` / `.requestAuthorization()` / `.authorizationRequestStatus()` / observable `.writeAuthorization` / `.latestQuantity` / `.samples` / `.saveQuantity`. **Not in the umbrella** — link the product explicitly. Reads are never gated on authorization; there is no read status, by design.
+- **PASKitCrash**: thin Sentry facade: `PASCrash.shared.start(_:)` (only after consent) / `.stop()` / `.isRunning` / `.capture(error:context:)` / `.capture(message:level:)` / `.addBreadcrumb(_:category:data:)` / `.setTag(_:forKey:)`, configured by `PASCrashConfig`. Privacy floor (no PII, screenshots, view hierarchy, replay or network breadcrumbs) is hardcoded. **Not in the umbrella**: link the product explicitly.
 
 ### Baseline
 
@@ -43,3 +44,4 @@ PASKit is grown deliberately, not scaffolded upfront. A capability earns a place
 - <doc:HealthOverview>
 - <doc:AuthOverview>
 - <doc:PushOverview>
+- <doc:CrashOverview>

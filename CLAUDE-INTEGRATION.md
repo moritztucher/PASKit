@@ -24,7 +24,8 @@ For a sibling repo: `@../PASKit/CLAUDE-INTEGRATION.md`. The rest of this file th
 | `PASKitAuth` | Firebase Auth facade: `PASAuth.shared.configure(_:)` / observable `.uid` + `.isAnonymous` + `.isLinked` + `.isSignedIn` + `.isBusy` + `.isConfigured` + `.lastError` / `.restoreSession()` / `.signInAnonymouslyIfNeeded()` / `.prepareAppleSignIn()` + `.signInWithApple(authorization:)` (throwing, for `ASAuthorizationController`) / `.prepareAppleRequest(_:)` + `.completeAppleSignIn(_:)` (non-throwing, for SwiftUI's `SignInWithAppleButton`) / `.signOut()` / `.deleteAccount()` → `PASAccountDeletionResult`; `PASAuthDelegate` (all methods defaulted) for moving app data with the session; `PASFreshInstallGuard`. Sign in with Apple only — no Google. Needs a bundled `GoogleService-Info.plist`; without one it no-ops and the app runs signed-out. **Never in the `PASKit` umbrella** — add this product explicitly. App owns sign-in UI and copy. |
 | `PASKitPush` | OneSignal facade (iOS only): `PASPush.shared.configure(PASPushConfig(appID:))` (consent required by default) / `.setConsent(_:)` / `.registerIfAuthorized()` (never prompts) / `.optIn` / `.optOut` / `.login(userID:)` / `.logout` / `.addTags` / `.removeTags`; observable `.isConfigured` + `.hasConsent` + `.isOptedIn` + `.subscriptionID` + `.userID`. Taps arrive through `PASNotifications.onResponse` (`isRemote == true`, OneSignal additional data flattened into `userInfo`). **Never in the `PASKit` umbrella** — add this product explicitly. App owns consent policy, tags, payload keys, the Notification Service Extension target. |
 | `PASKitPurchasesUI` | Dashboard-designed RevenueCat paywall: `PASPaywallView(placement:entitlement:displayCloseButton:fonts:onEntitled:onClose:)` (or `onEntitlement:` for purchase vs restore) — one outcome per presentation, never self-dismisses. **Not in the umbrella** — link the product explicitly. App owns placement + entitlement IDs and when it appears. |
-| `PASKit` (umbrella) | Re-exports every module **except `PASKitHealth`, `PASKitAuth`, `PASKitPush` and `PASKitPurchasesUI`** — one dependency line for the other six, `import` modules individually. Health, Auth, Push and PurchasesUI always need their own explicit product dependency. |
+| `PASKitCrash` | Sentry facade: `PASCrash.shared.start(PASCrashConfig(dsn:environment:releaseName:tracesSampleRate:debug:))` (`@MainActor`, idempotent, empty DSN is a no-op; call only after consent) / `.stop()` (on withdrawal) / `.isRunning` / `.capture(error:context:)` / `.capture(message:level:)` (`PASCrashLevel`) / `.addBreadcrumb(_:category:data:)` / `.setTag(_:forKey:)`. Capture calls work from any actor and are no-ops while not running. Privacy floor hardcoded; no user-identity API. **Never in the `PASKit` umbrella**: add this product explicitly. App owns consent policy, DSN per build configuration, environment, tags, and dSYM upload. |
+| `PASKit` (umbrella) | Re-exports every module **except `PASKitHealth`, `PASKitAuth`, `PASKitPush`, `PASKitPurchasesUI` and `PASKitCrash`** — one dependency line for the other six, `import` modules individually. Health, Auth, Push, PurchasesUI and Crash always need their own explicit product dependency. |
 
 ## Conventions
 
@@ -597,6 +598,34 @@ Rules: never register OneSignal's click listener — taps already reach `onRespo
 routes them twice. Never call `OneSignal.*` from app code outside the service extension. Routing
 keys go in the message's additional data, string values only. Keep local reminders local; server
 push is for what the device cannot schedule itself.
+
+## Crash reporting: `PASCrash`, not raw `SentrySDK`
+
+**Add the `PASKitCrash` product explicitly. It is never part of the `PASKit` umbrella** (see
+`docs/adr/ADR-0008-paskitcrash-sentry.md`): linking Sentry puts crash data in the app's privacy
+labels even when the SDK never starts. Setup steps: `docs/PASKitCrash.md`.
+
+```swift
+import PASKitCrash
+
+// Only once the app's consent policy says yes (at launch and when consent is given):
+PASCrash.shared.start(.init(dsn: AppKeys.sentryDSN, environment: AppKeys.environment))
+
+// Anywhere, any actor; silent no-op while not running:
+PASCrash.shared.capture(error: error, context: ["screen": "review"])
+PASCrash.shared.addBreadcrumb("Opened deck", category: "navigation")
+
+// When consent is withdrawn:
+PASCrash.shared.stop()
+```
+Rules: all Sentry calls go through `PASCrash`; never `import Sentry` in app code. Never call
+`start` before consent, and call `stop()` when consent is withdrawn. Reports cached on disk before
+`stop()` are sent only after a renewed `start`, so they never leave the device without consent. Do
+not try to enable PII, screenshots, view hierarchy, replay or network breadcrumbs: the floor is
+hardcoded on purpose. dSYM upload is the app's job (`sentry-cli` build phase on Archive builds;
+keep `releaseName` nil so the SDK default matches the upload). Create the Sentry project in the EU
+region and turn on *Prevent storing of IP addresses* in its security settings. The DSN is public;
+inject it per build configuration.
 
 ## Health — `PASHealth`, not raw `HKHealthStore`
 
