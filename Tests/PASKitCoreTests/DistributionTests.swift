@@ -62,6 +62,13 @@ struct DistributionClassifyTests {
         #expect(PASDistribution.unknown.analyticsValue == "unknown")
     }
 
+    @Test func verifiedAndUnverifiedBothYieldTheirEnvironment() {
+        #expect(PASDistribution.environment(of: .verified(.production)) == .production)
+        #expect(PASDistribution.environment(of: .unverified(.production)) == .production)
+        #expect(PASDistribution.environment(of: .unverified(.sandbox)) == .sandbox)
+        #expect(PASDistribution.classify(PASDistribution.environment(of: .unverified(.xcode))) == .development)
+    }
+
     @Test func codableRoundTrips() throws {
         for value in PASDistribution.allCases {
             let data = try JSONEncoder().encode(value)
@@ -81,17 +88,25 @@ final class DistributionResolverTests {
 
     deinit { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
 
-    private var storedHint: String? { defaults.string(forKey: AppInfo.distributionDefaultsKey) }
+    private let build = "1.0 (1)"
+
+    private var storedHint: String? {
+        AppInfo.storedDistribution(in: defaults, buildIdentifier: build)?.rawValue
+    }
+
+    private func makeSUT() -> DistributionResolver {
+        DistributionResolver(defaultsSuiteName: suiteName, buildIdentifier: build, debugBuild: false)
+    }
 
     @Test func sandboxProbeResolvesTestFlightAndPersistsHint() async {
-        let sut = DistributionResolver(defaultsSuiteName: suiteName, debugBuild: false)
+        let sut = makeSUT()
         let value = await sut.resolve(timeout: .seconds(5)) { .sandbox }
         #expect(value == .testFlight)
         #expect(storedHint == "testFlight")
     }
 
     @Test func slowProbeTimesOutAndPersistsNothing() async {
-        let sut = DistributionResolver(defaultsSuiteName: suiteName, debugBuild: false)
+        let sut = makeSUT()
         let value = await sut.resolve(timeout: .milliseconds(50)) {
             try await Task.sleep(for: .seconds(10))
             return .production
@@ -102,7 +117,7 @@ final class DistributionResolverTests {
 
     @Test func throwingProbeIsUnknownInRelease() async {
         struct ProbeError: Error {}
-        let sut = DistributionResolver(defaultsSuiteName: suiteName, debugBuild: false)
+        let sut = makeSUT()
         let value = await sut.resolve(timeout: .seconds(5)) { throw ProbeError() }
         #expect(value == .unknown)
         #expect(storedHint == nil)
@@ -110,7 +125,7 @@ final class DistributionResolverTests {
 
     @Test func successfulResolutionIsMemoised() async {
         let counter = ProbeCounter()
-        let sut = DistributionResolver(defaultsSuiteName: suiteName, debugBuild: false)
+        let sut = makeSUT()
         let probe: DistributionResolver.Probe = {
             await counter.increment()
             return .production
@@ -122,10 +137,55 @@ final class DistributionResolverTests {
         #expect(await counter.calls == 1)
     }
 
+    @Test func nonCancellableProbeStillTimesOut() async {
+        let sut = makeSUT()
+        let clock = ContinuousClock()
+        let start = clock.now
+        // Never resumes and ignores cancellation, like a stuck StoreKit call.
+        let value = await sut.resolve(timeout: .milliseconds(100)) {
+            await withCheckedContinuation { (_: CheckedContinuation<Void, Never>) in }
+            return .production
+        }
+        #expect(value == .unknown)
+        #expect(clock.now - start < .seconds(2))
+    }
+
+    @Test func concurrentCallersShareOneProbe() async {
+        let counter = ProbeCounter()
+        let sut = makeSUT()
+        let probe: DistributionResolver.Probe = {
+            await counter.increment()
+            try await Task.sleep(for: .milliseconds(100))
+            return .sandbox
+        }
+        async let first = sut.resolve(timeout: .seconds(5), probe: probe)
+        async let second = sut.resolve(timeout: .seconds(5), probe: probe)
+        let results = await [first, second]
+        #expect(results == [.testFlight, .testFlight])
+        #expect(await counter.calls == 1)
+    }
+
+    @Test func downgradeSequenceKeepsLastKnownHint() async {
+        struct ProbeError: Error {}
+        #expect(await makeSUT().resolve(timeout: .seconds(5)) { .production } == .appStore)
+        #expect(storedHint == "appStore")
+        #expect(await makeSUT().resolve(timeout: .seconds(5)) { .sandbox } == .testFlight)
+        #expect(storedHint == "testFlight")
+        #expect(await makeSUT().resolve(timeout: .seconds(5)) { throw ProbeError() } == .unknown)
+        #expect(storedHint == "testFlight")
+    }
+
+    @Test func hintIsBoundToTheBuild() async {
+        #expect(await makeSUT().resolve(timeout: .seconds(5)) { .production } == .appStore)
+        #expect(AppInfo.storedDistribution(in: defaults, buildIdentifier: build) == .appStore)
+        #expect(AppInfo.storedDistribution(in: defaults, buildIdentifier: "1.0 (2)") == nil)
+        #expect(AppInfo.storedDistribution(in: defaults, buildIdentifier: "1.1 (1)") == nil)
+    }
+
     @Test func unknownResultIsNotCached() async {
         struct ProbeError: Error {}
         let counter = ProbeCounter()
-        let sut = DistributionResolver(defaultsSuiteName: suiteName, debugBuild: false)
+        let sut = makeSUT()
         let failing: DistributionResolver.Probe = {
             await counter.increment()
             throw ProbeError()

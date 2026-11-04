@@ -121,13 +121,14 @@ A runtime check, not a build flag: the same binary is promoted from TestFlight t
 
 - **Unverified transactions are classified by their `environment` too** (verification fails on clock skew or jailbroken devices; logged at `.notice`).
 - **`.unknown` fails closed** — treat it as "not App Store". It is never cached: the next `distribution()` call retries.
-- **Memoised per process** — one StoreKit read shared by every caller.
-- **Hint vs truth.** Every non-`.unknown` result is persisted (`UserDefaults.standard`, key `pas.appInfo.distribution`) and exposed as `lastKnownDistribution`, so an App Store install can start crash reporting synchronously at launch. The fresh `distribution()` result is authoritative and must override (stop) anything the hint started.
+- **Memoised per process** — one StoreKit read shared by every caller; concurrent callers join the in-flight read, so the first caller's `timeout` wins.
+- **Timeout is hard** — the probe races a timer through unstructured tasks, so a StoreKit call that ignores cancellation cannot hold the caller past `timeout`.
+- **Hint vs truth.** Every non-`.unknown` result is persisted with the build it came from (`UserDefaults.standard`, key `pas.appInfo.distribution`, `version (build)` + value) and exposed as `lastKnownDistribution` for that same build only (an update or a TestFlight build over an App Store one starts with no hint); `.unknown` never overwrites it, so an App Store install can start crash reporting synchronously at launch. The fresh `distribution()` result is authoritative and must override (stop) anything the hint started.
 - **Rejected:** the `appStoreReceiptURL` / `sandboxReceipt` heuristic — deprecated in iOS 18 and redundant with `AppTransaction` (iOS 16+).
 
 ## Tests
 
-`Tests/PASKitCoreTests/` (Swift Testing) covers the pure, deterministic logic — `PASStreakEngine` freeze-ordering rules, `Date+PASCalendar` day/week math, `PASDurationFormat`, `URLRequest.cURL`, `@PASDefault`/`PASSettingsStore`/`PASDraft` round-trips, `PASError` (default developer copy, localizer override, per-case fallback), and `DistributionTests` (StoreKit-environment mapping, `analyticsValue` contract, resolver timeout / memoisation / never-cache-unknown / hint persistence via an injected probe — no StoreKit call). A fixed UTC calendar (`TestSupport.swift`) keeps day/week assertions stable across CI timezones. Foundation-only, so they run on the macOS host via `swift test`. `PASErrorTests` is `.serialized` — `PASError.localizer` is process-global state.
+`Tests/PASKitCoreTests/` (Swift Testing) covers the pure, deterministic logic — `PASStreakEngine` freeze-ordering rules, `Date+PASCalendar` day/week math, `PASDurationFormat`, `URLRequest.cURL`, `@PASDefault`/`PASSettingsStore`/`PASDraft` round-trips, `PASError` (default developer copy, localizer override, per-case fallback), and `DistributionTests` (StoreKit-environment mapping, `analyticsValue` contract, resolver timeout (incl. a non-cancellable probe) / memoisation / concurrent callers / never-cache-unknown / build-bound hint / downgrade sequence via an injected probe — no StoreKit call). A fixed UTC calendar (`TestSupport.swift`) keeps day/week assertions stable across CI timezones. Foundation-only, so they run on the macOS host via `swift test`. `PASErrorTests` is `.serialized` — `PASError.localizer` is process-global state.
 
 ## Remaining
 

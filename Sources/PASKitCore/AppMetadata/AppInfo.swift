@@ -7,6 +7,7 @@
 
 import Foundation
 import StoreKit
+import Synchronization
 
 /// Static, app-agnostic access to the running app's bundle metadata.
 public enum AppInfo {
@@ -50,54 +51,86 @@ public enum AppInfo {
 extension AppInfo {
     static let distributionDefaultsKey = "pas.appInfo.distribution"
 
-    /// Last value resolved by `distribution()` in this or a previous launch, or `nil`.
-    /// A hint, not the truth: use it to start crash reporting early at launch, then
-    /// re-check with `distribution()` and correct if they disagree.
+    /// Identifies the running build for the persisted hint: `"<version> (<build>)"`.
+    static var buildIdentifier: String { versionWithBuild }
+
+    /// Last value resolved by `distribution()` for **this build** (same
+    /// `CFBundleShortVersionString` and `CFBundleVersion`), or `nil`. A hint, not the
+    /// truth: use it to start crash reporting early at launch, then re-check with
+    /// `distribution()` and correct if they disagree. A different build (an update, or a
+    /// TestFlight build installed over an App Store one) never inherits the old answer.
     public static var lastKnownDistribution: PASDistribution? {
-        UserDefaults.standard.string(forKey: distributionDefaultsKey).flatMap(PASDistribution.init(rawValue:))
+        storedDistribution(in: .standard, buildIdentifier: buildIdentifier)
     }
 
     /// How this install reached the device. Resolved once per process (memoised) from
-    /// `AppTransaction.shared`, waiting at most `timeout` on StoreKit. Never throws:
-    /// a failure or timeout yields `.unknown` (`.development` in DEBUG builds) and is
-    /// retried on the next call rather than cached.
+    /// `AppTransaction.shared`, waiting at most `timeout` on StoreKit even if StoreKit
+    /// ignores cancellation. Never throws: a failure or timeout yields `.unknown`
+    /// (`.development` when PASKit is compiled in DEBUG) and is retried on the next call
+    /// rather than cached.
+    ///
+    /// Concurrent callers share one in-flight resolution, so the first caller's
+    /// `timeout` wins; later callers' `timeout` is ignored until a retry starts.
     public static func distribution(timeout: Duration = .seconds(3)) async -> PASDistribution {
         await DistributionResolver.shared.resolve(timeout: timeout, probe: storeKitEnvironment)
     }
 
-    /// Default probe: `AppTransaction.shared`, verified or unverified alike. Verification can
-    /// fail on clock skew or a jailbroken device; the environment field is still meaningful.
+    /// Default probe: `AppTransaction.shared`, verified or unverified alike (see
+    /// `PASDistribution.environment(of:)`).
     @Sendable static func storeKitEnvironment() async throws -> AppStore.Environment {
+        let check: AppTransactionCheck
         switch try await AppTransaction.shared {
         case .verified(let transaction):
-            return transaction.environment
+            check = .verified(transaction.environment)
         case .unverified(let transaction, let error):
             PASLogger.make(category: "appinfo")
                 .notice("AppTransaction unverified: \(String(describing: error), privacy: .public)")
-            return transaction.environment
+            check = .unverified(transaction.environment)
         }
+        return PASDistribution.environment(of: check)
+    }
+
+    // MARK: Hint storage
+
+    static func storedDistribution(in defaults: UserDefaults, buildIdentifier: String) -> PASDistribution? {
+        guard let entry = defaults.dictionary(forKey: distributionDefaultsKey) as? [String: String],
+              entry["build"] == buildIdentifier,
+              let raw = entry["value"] else { return nil }
+        return PASDistribution(rawValue: raw)
+    }
+
+    static func storeDistribution(_ value: PASDistribution, in defaults: UserDefaults, buildIdentifier: String) {
+        defaults.set(["build": buildIdentifier, "value": value.rawValue], forKey: distributionDefaultsKey)
     }
 }
 
 /// Memoises the first successful distribution resolution. Injectable probe, timeout,
-/// defaults suite and build flavour make it testable without StoreKit.
+/// defaults suite, build identifier and build flavour make it testable without StoreKit.
 actor DistributionResolver {
     typealias Probe = @Sendable () async throws -> AppStore.Environment
 
     static let shared = DistributionResolver()
 
     private let defaults: UserDefaults
+    private let buildIdentifier: String
     private let debugBuild: Bool
     private var task: Task<PASDistribution, Never>?
+    /// Bumped per new resolution, so a caller only clears the task it started.
+    private var generation = 0
 
     /// - Parameter defaultsSuiteName: `nil` = `UserDefaults.standard` (where `lastKnownDistribution` reads).
-    init(defaultsSuiteName: String? = nil, debugBuild: Bool = PASDistribution.isDebugBuild) {
+    init(defaultsSuiteName: String? = nil,
+         buildIdentifier: String = AppInfo.buildIdentifier,
+         debugBuild: Bool = PASDistribution.isDebugBuild) {
         self.defaults = defaultsSuiteName.flatMap(UserDefaults.init(suiteName:)) ?? .standard
+        self.buildIdentifier = buildIdentifier
         self.debugBuild = debugBuild
     }
 
     func resolve(timeout: Duration, probe: @escaping Probe) async -> PASDistribution {
         if let task { return await task.value }
+        generation += 1
+        let myGeneration = generation
         let debugBuild = debugBuild
         let task = Task {
             PASDistribution.classify(await Self.probeEnvironment(timeout: timeout, probe: probe), debugBuild: debugBuild)
@@ -105,24 +138,51 @@ actor DistributionResolver {
         self.task = task
         let value = await task.value
         if value == .unknown {
-            self.task = nil // never cache a failure; the next call retries
+            // Never cache a failure; the next call retries. Only clear our own task:
+            // a newer retry may already be in flight.
+            if generation == myGeneration { self.task = nil }
         } else {
-            defaults.set(value.rawValue, forKey: AppInfo.distributionDefaultsKey)
+            AppInfo.storeDistribution(value, in: defaults, buildIdentifier: buildIdentifier)
         }
         return value
     }
 
     /// Races the probe against `timeout`; `nil` when the probe throws or loses the race.
+    /// Unstructured tasks + a resume-once continuation, so a probe that ignores
+    /// cancellation cannot hold the caller past `timeout` (a task group would wait for it).
     static func probeEnvironment(timeout: Duration, probe: @escaping Probe) async -> AppStore.Environment? {
-        await withTaskGroup(of: AppStore.Environment?.self) { group in
-            group.addTask { try? await probe() }
-            group.addTask {
+        await withCheckedContinuation { (continuation: CheckedContinuation<AppStore.Environment?, Never>) in
+            let once = ResumeOnce(continuation)
+            let timer = Task {
                 try? await Task.sleep(for: timeout)
-                return nil
+                once.resume(nil)
             }
-            let first = await group.next() ?? nil
-            group.cancelAll()
-            return first
+            let prober = Task {
+                let environment = try? await probe()
+                once.resume(environment)
+                timer.cancel()
+            }
+            Task {
+                // Cancel the loser (best effort; never awaited).
+                _ = await timer.result
+                prober.cancel()
+            }
+        }
+    }
+}
+
+/// Resumes a continuation exactly once; later calls are ignored.
+private final class ResumeOnce: Sendable {
+    private let continuation: Mutex<CheckedContinuation<AppStore.Environment?, Never>?>
+
+    init(_ continuation: CheckedContinuation<AppStore.Environment?, Never>) {
+        self.continuation = Mutex(continuation)
+    }
+
+    func resume(_ value: AppStore.Environment?) {
+        continuation.withLock { pending in
+            pending?.resume(returning: value)
+            pending = nil
         }
     }
 }
