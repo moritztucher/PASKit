@@ -29,13 +29,25 @@ public enum PASDistribution: String, Sendable, Codable, CaseIterable {
     /// Lower-case analytics-property value: `"appstore"` / `"testflight"` / `"development"` / `"unknown"`.
     public var analyticsValue: String { rawValue.lowercased() }
 
-    /// `true` when PASKit itself was compiled in DEBUG. A DEBUG build can never be an App Store install.
+    /// PASKit's own `DEBUG` compile condition, not the app's flag. Xcode builds package
+    /// dependencies in the app's configuration, so in practice it follows the app's
+    /// Debug/Release, but apps that need certainty should gate on their own `#if DEBUG`.
+    /// Only used to map an unresolved probe to `.development` instead of `.unknown`.
     static var isDebugBuild: Bool {
         #if DEBUG
         true
         #else
         false
         #endif
+    }
+
+    /// Verified and unverified alike yield their `environment`: verification fails on
+    /// clock skew or jailbroken devices, and the field is not what an attacker would forge
+    /// to *receive* analytics. Pure, test seam.
+    static func environment(of check: AppTransactionCheck) -> AppStore.Environment {
+        switch check {
+        case .verified(let environment), .unverified(let environment): environment
+        }
     }
 
     /// Pure mapping, test seam. `nil` environment = probe failed or timed out.
@@ -48,4 +60,11 @@ public enum PASDistribution: String, Sendable, Codable, CaseIterable {
         default: return debugBuild ? .development : .unknown
         }
     }
+}
+
+/// StoreKit's `VerificationResult<AppTransaction>` reduced to what classification needs,
+/// so the verified/unverified rule is testable without a real transaction.
+enum AppTransactionCheck: Sendable, Equatable {
+    case verified(AppStore.Environment)
+    case unverified(AppStore.Environment)
 }

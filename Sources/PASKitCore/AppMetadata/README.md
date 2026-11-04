@@ -8,7 +8,7 @@ Static, app-agnostic access to bundle and device metadata.
 - `DeviceInfo` — `modelIdentifier` (all platforms); `systemName`, `systemVersion`, `model`, `summary` (iOS-only).
 - `PASDistribution` — `.appStore` / `.testFlight` / `.development` / `.unknown`; `isAppStore`, `analyticsValue`.
 - `AppInfo.distribution(timeout:)` — async, memoised, never throws; reads StoreKit 2 `AppTransaction`.
-- `AppInfo.lastKnownDistribution` — previous resolution (hint only; the fresh `distribution()` wins).
+- `AppInfo.lastKnownDistribution` — previous resolution for this exact build (hint only; the fresh `distribution()` wins).
 
 ## Example
 
