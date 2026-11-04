@@ -15,7 +15,12 @@ AppInfo.version             // "1.2"
 AppInfo.versionWithBuild    // "1.2 (45)"
 AppInfo.displayName
 DeviceInfo.modelIdentifier  // "iPhone16,1" — cross-platform
+
+await AppInfo.distribution()   // .appStore / .testFlight / .development / .unknown (StoreKit AppTransaction)
+AppInfo.lastKnownDistribution  // previous resolution, a launch-time hint only
 ```
+
+Gate analytics and crash reporting on `isAppStore` so TestFlight and dev installs never report.
 
 ## Logging
 
