@@ -29,10 +29,10 @@ public final class PASPurchases {
 
     public static let shared = PASPurchases()
 
-    /// Latest customer info from RevenueCat. Kept current by the SDK's
-    /// customer-info stream from `configure` onward — purchases, renewals,
-    /// refunds, restores, and other-device changes all land here. Observable;
-    /// gate features on it rather than caching booleans.
+    /// Latest customer info from RevenueCat. Starts from the SDK's device
+    /// cache at `configure`, then kept current by its customer-info stream —
+    /// purchases, renewals, refunds, restores, and other-device changes all
+    /// land here. Observable; gate features on it rather than caching booleans.
     public private(set) var customerInfo: CustomerInfo?
 
     public private(set) var isConfigured = false
@@ -55,8 +55,15 @@ public final class PASPurchases {
         Purchases.logLevel = config.debugLogs ? .debug : .warn
         Purchases.configure(withAPIKey: config.apiKey, appUserID: config.appUserID)
         isConfigured = true
+        // Made before the seed: the stream registers its observer as it is
+        // created, so the launch fetch's answer can't land between the two.
+        let updates = Purchases.shared.customerInfoStream
+        // The stream re-sends the cached info only after a fetch succeeds, so
+        // without this a subscriber who launches offline reads as not
+        // entitled until the network returns and the app is foregrounded.
+        customerInfo = Purchases.shared.cachedCustomerInfo
         customerInfoTask = Task { [weak self] in
-            for await info in Purchases.shared.customerInfoStream {
+            for await info in updates {
                 self?.customerInfo = info
             }
         }
@@ -65,8 +72,9 @@ public final class PASPurchases {
 
     // MARK: - Entitlements
 
-    /// Whether the entitlement is currently active. `false` until the first
-    /// customer info arrives — treat as "not entitled yet", not as an error.
+    /// Whether the entitlement is currently active. `false` while there is no
+    /// customer info yet (a first launch before the first fetch answers) —
+    /// treat as "not entitled yet", not as an error.
     public func isEntitled(_ entitlementID: String) -> Bool {
         customerInfo?.entitlements[entitlementID]?.isActive == true
     }
