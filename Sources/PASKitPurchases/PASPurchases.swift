@@ -55,6 +55,9 @@ public final class PASPurchases {
         Purchases.logLevel = config.debugLogs ? .debug : .warn
         Purchases.configure(withAPIKey: config.apiKey, appUserID: config.appUserID)
         isConfigured = true
+        if config.collectsAppleAdsAttribution {
+            Purchases.shared.attribution.enableAdServicesAttributionTokenCollection()
+        }
         // Made before the seed: the stream registers its observer as it is
         // created, so the launch fetch's answer can't land between the two.
         let updates = Purchases.shared.customerInfoStream

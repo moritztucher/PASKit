@@ -412,6 +412,8 @@ import PASKitPurchases
 
 // At launch (public SDK key, never a secret key):
 PASPurchases.shared.configure(.init(apiKey: AppKeys.revenueCat))
+// Running Apple Ads? Opt in to attribution (no ATT prompt; name it in the privacy policy):
+// PASPurchases.shared.configure(.init(apiKey: AppKeys.revenueCat, collectsAppleAdsAttribution: true))
 
 // App-side entitlement vocabulary — typed, never stringly at call sites:
 enum Entitlement: String { case premium }

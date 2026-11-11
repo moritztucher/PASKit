@@ -12,7 +12,7 @@ A thin, concrete wrapper over RevenueCat — configuration, live entitlement sta
 
 | API | Purpose |
 |---|---|
-| `PASPurchases.shared.configure(PASPurchasesConfig)` | One-time SDK setup at launch (public SDK key, optional `appUserID`, `debugLogs`). Idempotent. Seeds `customerInfo` from the SDK's device cache, then starts the customer-info stream, so an offline launch keeps a subscriber entitled. |
+| `PASPurchases.shared.configure(PASPurchasesConfig)` | One-time SDK setup at launch (public SDK key, optional `appUserID`, `debugLogs`, and `collectsAppleAdsAttribution`, opt-in: RevenueCat collects the AdServices token once per install and attributes Apple Ads campaigns and keywords; no ATT prompt, but the privacy policy should name it). Idempotent. Seeds `customerInfo` from the SDK's device cache, then starts the customer-info stream, so an offline launch keeps a subscriber entitled. |
 | `customerInfo` | Observable. Starts from the device cache (`Purchases.shared.cachedCustomerInfo`), then kept live by RevenueCat's customer-info stream — purchases, renewals, refunds, restores, other-device changes. The single source of truth for gating. The stream alone re-sends cached info only after a successful fetch, which is why `configure` seeds it. |
 | `isEntitled(_:)` | Entitlement check; accepts a raw `String` or any `String`-backed enum so apps keep a typed entitlement vocabulary. |
 | `offerings()` / `currentOffering()` / `offering(identifier:)` | Dashboard offerings for custom paywall UI. |
