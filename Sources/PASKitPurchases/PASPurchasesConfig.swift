@@ -23,9 +23,18 @@ public struct PASPurchasesConfig: Sendable {
     /// Emit verbose RevenueCat SDK logs. Keep off in Release.
     public let debugLogs: Bool
 
-    public init(apiKey: String, appUserID: String? = nil, debugLogs: Bool = false) {
+    /// Collect the Apple Ads (AdServices) attribution token, so RevenueCat
+    /// can attribute installs, trials and revenue to Apple Ads campaigns and
+    /// keywords. Needs no App Tracking Transparency prompt, but the app's
+    /// privacy policy should say that Apple Ads attribution is collected.
+    /// The token is sent once per install.
+    public let collectsAppleAdsAttribution: Bool
+
+    public init(apiKey: String, appUserID: String? = nil, debugLogs: Bool = false,
+                collectsAppleAdsAttribution: Bool = false) {
         self.apiKey = apiKey
         self.appUserID = appUserID
         self.debugLogs = debugLogs
+        self.collectsAppleAdsAttribution = collectsAppleAdsAttribution
     }
 }
